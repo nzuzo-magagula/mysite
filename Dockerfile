@@ -53,4 +53,3 @@ EXPOSE 8080
 
 WORKDIR /usr/local/app
 ENTRYPOINT [ "/usr/local/app/blogger" ]
-
