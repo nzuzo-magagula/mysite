@@ -7,8 +7,9 @@ COPY . .
 RUN cargo chef prepare --recipe-path recipe.json
 
 FROM chef AS builder
-# Install Dioxus CLI
-RUN cargo install --git https://github.com/DioxusLabs/dioxus dioxus-cli --locked
+# Install Dioxus CLI and dependencies
+RUN apt-get update && apt-get install -y binaryen && rm -rf /var/lib/apt/lists/*
+RUN cargo install dioxus-cli --version 0.7.0-rc.3 --locked
 # Add wasm target
 RUN rustup target add wasm32-unknown-unknown
 
@@ -26,17 +27,17 @@ RUN dx build --release --features server
 FROM debian:bookworm-slim AS runtime
 RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /usr/local/bin
+WORKDIR /app
 
 # 1. Copy the REAL server binary (not a symlink)
-COPY --from=builder /app/target/release/blogger /usr/local/bin/blogger
+COPY --from=builder /app/target/release/blogger /app/blogger
 
 # 2. Copy the static assets (WASM, JS, CSS) to the 'public' folder the server expects
-COPY --from=builder /app/target/dx/blogger/release/web/public /usr/local/bin/public
+COPY --from=builder /app/target/dx/blogger/release/web/public /app/public
 
 # 3. Copy required data folders and files
-COPY --from=builder /app/articles /usr/local/bin/articles
-COPY --from=builder /app/aboutme.md /usr/local/bin/aboutme.md
+COPY --from=builder /app/articles /app/articles
+COPY --from=builder /app/aboutme.md /app/aboutme.md
 
 # Set networking environment variables
 ENV PORT=8080
@@ -44,4 +45,4 @@ ENV IP=0.0.0.0
 EXPOSE 8080
 
 # Use the absolute path to the binary
-ENTRYPOINT [ "/usr/local/bin/blogger" ]
+ENTRYPOINT [ "/app/blogger" ]
