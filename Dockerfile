@@ -1,5 +1,6 @@
 # Phase 1: Chef - Prepare the recipe
-FROM rust:1.81-bookworm AS chef
+# We use 'rust:bookworm' (latest stable) to support Rust Edition 2024 (1.85+)
+FROM rust:bookworm AS chef
 RUN cargo install cargo-chef
 WORKDIR /app
 
@@ -18,8 +19,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Dioxus CLI from source
-# The install script (install.sh) provides binaries that require GLIBC 2.39,
-# which is not available in Debian Bookworm. Compiling from source ensures compatibility.
+# Compiling from source inside the container ensures GLIBC compatibility.
 RUN cargo install dioxus-cli --version 0.7.0-rc.3 --locked
 
 # Add WASM target
@@ -39,14 +39,12 @@ RUN dx build --release --features server --verbose
 FROM debian:bookworm-slim AS runtime
 RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
 
-# Use /app for everything
 WORKDIR /app
 
 # 1. Copy the server binary
 COPY --from=builder /app/target/release/blogger ./blogger
 
-# 2. Copy the web assets (WASM, JS, CSS) 
-# Note: 'dx build' puts them in target/dx/[pkg_name]/release/web/public
+# 2. Copy the web assets
 COPY --from=builder /app/target/dx/blogger/release/web/public ./public
 
 # 3. Copy required data folders and files
@@ -58,5 +56,5 @@ ENV PORT=8080
 ENV IP=0.0.0.0
 EXPOSE 8080
 
-# Use the absolute path to the binary to avoid any ambiguity
+# Use absolute path for entrypoint
 ENTRYPOINT [ "/app/blogger" ]
