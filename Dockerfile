@@ -10,16 +10,14 @@ RUN cargo chef prepare --recipe-path recipe.json
 # Phase 2: Builder - Cook the dependencies and build the app
 FROM chef AS builder
 
-# Install system dependencies needed for compilation and Dioxus
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     pkg-config \
     libssl-dev \
     binaryen \
     && rm -rf /var/lib/apt/lists/*
 
-# Install latest stable Dioxus CLI from source
-# This ensures compatibility with the Dioxus 0.7.x framework versions
-# and prevents the 'GLIBC' errors seen with pre-compiled binaries.
+# Install latest stable Dioxus CLI
 RUN cargo install dioxus-cli --locked
 
 # Add WASM target
@@ -27,17 +25,12 @@ RUN rustup target add wasm32-unknown-unknown
 
 # Cook dependencies (cached layer)
 COPY --from=planner /app/recipe.json recipe.json
-# Path dependencies must be copied for cargo-chef to work
 COPY advanced_markdown_parser ./advanced_markdown_parser
 RUN cargo chef cook --release --recipe-path recipe.json
 
 # Copy source and build
 COPY . .
-
-# Build for Fullstack. 
-# In Dioxus 0.7+, 'dx build --release' automatically handles the multi-target build
-# (Server binary + WASM client) correctly. Explicitly passing --features server
-# can sometimes leak server-only dependencies into the WASM build, causing errors.
+# 'dx build' handles multi-target correctly in 0.7+
 RUN dx build --release --verbose
 
 # Phase 3: Runtime - Final slim image
@@ -46,8 +39,11 @@ RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/
 
 WORKDIR /app
 
-# 1. Copy the server binary
-COPY --from=builder /app/target/release/blogger ./blogger
+# 1. Copy the server binary from the correct Dioxus-specific path
+# Note: 'dx build' puts the server binary in target/[target_triple]/server-release/
+# and the dummy binary from cargo-chef remains in target/release/.
+# We want the REAL one.
+COPY --from=builder /app/target/x86_64-unknown-linux-gnu/server-release/blogger ./blogger
 
 # 2. Copy the web assets
 COPY --from=builder /app/target/dx/blogger/release/web/public ./public
@@ -59,7 +55,12 @@ COPY --from=builder /app/aboutme.md ./aboutme.md
 # Set networking environment variables
 ENV PORT=8080
 ENV IP=0.0.0.0
+# Tell Dioxus where to find the static assets
+ENV DIOXUS_ASSET_DIR=/app/public
 EXPOSE 8080
+
+# Ensure binary is executable
+RUN chmod +x ./blogger
 
 # Use absolute path for entrypoint
 ENTRYPOINT [ "/app/blogger" ]
