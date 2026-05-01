@@ -1,9 +1,10 @@
+# Stage 1: Builder
 FROM rust:1.81-bookworm AS builder
 
 # Install system dependencies
-# - pkg-config and libssl-dev are often needed for Rust crates
-# - binaryen provides wasm-opt
-# - curl and nodejs/npm might be needed for asset processing (Tailwind)
+# - pkg-config, libssl-dev for Rust crates
+# - binaryen for wasm-opt
+# - curl and nodejs/npm for Tailwind and CLI install
 RUN apt-get update && apt-get install -y \
     pkg-config \
     libssl-dev \
@@ -13,41 +14,45 @@ RUN apt-get update && apt-get install -y \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Dioxus CLI
-RUN cargo install dioxus-cli --version 0.7.0-rc.3 --locked
+# 1. Use the official Dioxus install script as requested
+# This script downloads a pre-compiled binary, which is much faster.
+RUN curl -sSL https://dioxus.dev/install.sh | bash
+# Add the cargo bin directory to PATH so 'dx' is available
+ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Add WASM target
 RUN rustup target add wasm32-unknown-unknown
 
+# Use /usr/src/app which is the standard Rust working directory
 WORKDIR /usr/src/app
 
-# Copy everything first (simplified build for troubleshooting)
+# Copy files
 COPY . .
 
-# Install npm dependencies if they exist
+# Install npm dependencies for Tailwind plugins
 RUN if [ -f package.json ]; then npm install; fi
 
-# Build the project with verbose output to catch errors
+# Build the project with verbose output
+# 'dx build' will now use the version installed by the script
 RUN dx build --release --features server --verbose
 
-# Final stage
+# Stage 2: Runtime
 FROM debian:bookworm-slim AS runtime
 RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
 
-# Ensure the /app directory exists and we have permissions
-RUN mkdir -p /app
-WORKDIR /app
+# Using the same WORKDIR as builder for consistency
+WORKDIR /usr/src/app
 
 # Copy assets and binary from builder
-# We use absolute paths from the builder stage
-COPY --from=builder /usr/src/app/target/release/blogger /app/blogger
-COPY --from=builder /usr/src/app/target/dx/blogger/release/web/public /app/public
-COPY --from=builder /usr/src/app/articles /app/articles
-COPY --from=builder /usr/src/app/aboutme.md /app/aboutme.md
+COPY --from=builder /usr/src/app/target/release/blogger ./blogger
+COPY --from=builder /usr/src/app/target/dx/blogger/release/web/public ./public
+COPY --from=builder /usr/src/app/articles ./articles
+COPY --from=builder /usr/src/app/aboutme.md ./aboutme.md
 
+# Set networking environment variables
 ENV PORT=8080
 ENV IP=0.0.0.0
 EXPOSE 8080
 
-# Use absolute path for entrypoint
-ENTRYPOINT ["/app/blogger"]
+# Run the binary
+ENTRYPOINT ["./blogger"]
