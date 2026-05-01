@@ -4,12 +4,9 @@ use dioxus::prelude::*;
 #[component]
 pub fn Projects() -> Element {
     let repos = use_resource(|| async move {
-        fetch_github_repos(
-            GitHubAccountType::User,
-            "newsnet-africa".to_string(),
-        )
-        .await
-        .unwrap_or_default()
+        fetch_github_repos(GitHubAccountType::User, "newsnet-africa".to_string())
+            .await
+            .unwrap_or_default()
     });
 
     rsx! {
@@ -21,7 +18,7 @@ pub fn Projects() -> Element {
                 }
                 "Working on"
             }
-            
+
             div {
                 class: "space-y-4",
                 match repos.value().as_ref() {
@@ -55,7 +52,7 @@ pub fn Projects() -> Element {
                     }
                 }
             }
-            
+
             // Connect Section
             div {
                 class: "mt-8 p-5 rounded-xl bg-gradient-to-br from-primary/10 to-secondary/10 border border-primary/20",
@@ -69,7 +66,7 @@ pub fn Projects() -> Element {
                         "Github"
                     }
                     a {
-                        href: "mailto:nzuzo@example.com",
+                        href: "mailto:nzuzo@newsnet.africa",
                         class: "flex-1 py-2 text-center text-sm rounded-md font-medium border border-base-300 hover:bg-base-200 transition-colors",
                         "Email"
                     }
@@ -86,7 +83,7 @@ fn ProjectItem(repo: GitHubRepo) -> Element {
             href: "{repo.html_url}",
             target: "_blank",
             class: "flex items-start gap-3 p-2 rounded-lg transition-colors group hover:bg-base-200",
-            
+
             // Icon Placeholder
             div {
                 class: "mt-1 p-1.5 rounded-md bg-primary/10 text-primary",
@@ -94,7 +91,7 @@ fn ProjectItem(repo: GitHubRepo) -> Element {
                     path { stroke_linecap: "round", stroke_linejoin: "round", stroke_width: "2", d: "M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" }
                 }
             }
-            
+
             div {
                 class: "flex-1 min-w-0",
                 div {
@@ -115,4 +112,3 @@ fn ProjectItem(repo: GitHubRepo) -> Element {
         }
     }
 }
-
