@@ -1,58 +1,62 @@
-# Stage 1: Builder
-FROM rust:1.81-bookworm AS builder
+# Phase 1: Chef - Prepare the recipe
+FROM rust:1.81-bookworm AS chef
+RUN cargo install cargo-chef
+WORKDIR /app
 
-# Install system dependencies
-# - pkg-config, libssl-dev for Rust crates
-# - binaryen for wasm-opt
-# - curl and nodejs/npm for Tailwind and CLI install
+FROM chef AS planner
+COPY . .
+RUN cargo chef prepare --recipe-path recipe.json
+
+# Phase 2: Builder - Cook the dependencies and build the app
+FROM chef AS builder
+
+# Install system dependencies needed for compilation and Dioxus
 RUN apt-get update && apt-get install -y \
     pkg-config \
     libssl-dev \
     binaryen \
-    curl \
-    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-# 1. Use the official Dioxus install script as requested
-# This script downloads a pre-compiled binary, which is much faster.
-RUN curl -sSL https://dioxus.dev/install.sh | bash
-# Add the cargo bin directory to PATH so 'dx' is available
-ENV PATH="/root/.cargo/bin:${PATH}"
+# Install Dioxus CLI from source
+# The install script (install.sh) provides binaries that require GLIBC 2.39,
+# which is not available in Debian Bookworm. Compiling from source ensures compatibility.
+RUN cargo install dioxus-cli --version 0.7.0-rc.3 --locked
 
 # Add WASM target
 RUN rustup target add wasm32-unknown-unknown
 
-# Use /usr/src/app which is the standard Rust working directory
-WORKDIR /usr/src/app
+# Cook dependencies (cached layer)
+COPY --from=planner /app/recipe.json recipe.json
+# Path dependencies must be copied for cargo-chef to work
+COPY advanced_markdown_parser ./advanced_markdown_parser
+RUN cargo chef cook --release --recipe-path recipe.json
 
-# Copy files
+# Copy source and build
 COPY . .
-
-# Install npm dependencies for Tailwind plugins
-RUN if [ -f package.json ]; then npm install; fi
-
-# Build the project with verbose output
-# 'dx build' will now use the version installed by the script
 RUN dx build --release --features server --verbose
 
-# Stage 2: Runtime
+# Phase 3: Runtime - Final slim image
 FROM debian:bookworm-slim AS runtime
 RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
 
-# Using the same WORKDIR as builder for consistency
-WORKDIR /usr/src/app
+# Use /app for everything
+WORKDIR /app
 
-# Copy assets and binary from builder
-COPY --from=builder /usr/src/app/target/release/blogger ./blogger
-COPY --from=builder /usr/src/app/target/dx/blogger/release/web/public ./public
-COPY --from=builder /usr/src/app/articles ./articles
-COPY --from=builder /usr/src/app/aboutme.md ./aboutme.md
+# 1. Copy the server binary
+COPY --from=builder /app/target/release/blogger ./blogger
+
+# 2. Copy the web assets (WASM, JS, CSS) 
+# Note: 'dx build' puts them in target/dx/[pkg_name]/release/web/public
+COPY --from=builder /app/target/dx/blogger/release/web/public ./public
+
+# 3. Copy required data folders and files
+COPY --from=builder /app/articles ./articles
+COPY --from=builder /app/aboutme.md ./aboutme.md
 
 # Set networking environment variables
 ENV PORT=8080
 ENV IP=0.0.0.0
 EXPOSE 8080
 
-# Run the binary
-ENTRYPOINT ["./blogger"]
+# Use the absolute path to the binary to avoid any ambiguity
+ENTRYPOINT [ "/app/blogger" ]
