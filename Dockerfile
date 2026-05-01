@@ -1,5 +1,4 @@
 # Phase 1: Chef - Prepare the recipe
-# We use 'rust:bookworm' (latest stable) to support Rust Edition 2024 (1.85+)
 FROM rust:bookworm AS chef
 RUN cargo install cargo-chef
 WORKDIR /app
@@ -18,9 +17,10 @@ RUN apt-get update && apt-get install -y \
     binaryen \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Dioxus CLI from source
-# Compiling from source inside the container ensures GLIBC compatibility.
-RUN cargo install dioxus-cli --version 0.7.0-rc.3 --locked
+# Install latest stable Dioxus CLI from source
+# This ensures compatibility with the Dioxus 0.7.x framework versions
+# and prevents the 'GLIBC' errors seen with pre-compiled binaries.
+RUN cargo install dioxus-cli --locked
 
 # Add WASM target
 RUN rustup target add wasm32-unknown-unknown
@@ -33,7 +33,12 @@ RUN cargo chef cook --release --recipe-path recipe.json
 
 # Copy source and build
 COPY . .
-RUN dx build --release --features server --verbose
+
+# Build for Fullstack. 
+# In Dioxus 0.7+, 'dx build --release' automatically handles the multi-target build
+# (Server binary + WASM client) correctly. Explicitly passing --features server
+# can sometimes leak server-only dependencies into the WASM build, causing errors.
+RUN dx build --release --verbose
 
 # Phase 3: Runtime - Final slim image
 FROM debian:bookworm-slim AS runtime
