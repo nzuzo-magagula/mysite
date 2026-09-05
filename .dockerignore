@@ -6,8 +6,9 @@
 target/
 dist/
 
-# Node modules
+# Node modules (root and every nested demo project)
 node_modules/
+**/node_modules/
 
 # IDE
 .vscode/

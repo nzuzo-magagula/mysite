@@ -1,151 +1,164 @@
 use dioxus::prelude::*;
 
-use crate::markdown_management::{
-    ArticleWithMetadata, fetch_home_page_data_with_metadata,
-};
+use crate::markdown_management::{ArticleWithMetadata, fetch_home_page_data_with_metadata};
+use crate::shared::cover::CoverArt;
 
 #[component]
 pub fn Blogs() -> Element {
-    // Fetch articles with metadata
-    let home_data = use_resource(|| async move {
-        fetch_home_page_data_with_metadata().await.ok()
-    });
+    let home_data = use_resource(|| async move { fetch_home_page_data_with_metadata().await.ok() });
 
     rsx! {
-        div {
-            class: "space-y-12",
-            
-            // Featured Post Section
-            div {
-                h2 {
-                    class: "text-xl font-bold mb-6 flex items-center gap-2",
-                    span { class: "w-2 h-6 bg-primary rounded-full" }
-                    "Latest Deep Dive"
-                }
-                
+        div { class: "space-y-14",
+
+            // ---- Featured ----
+            section {
+                SectionHeading { accent_class: "bg-primary", title: "Latest deep dive" }
+
                 {
                     match home_data.read().as_ref() {
                         Some(Some(data)) => {
                             if let Some(article) = &data.first_article {
                                 rsx! {
-                                    FeaturedArticle {
-                                        article: article.clone()
-                                    }
+                                    FeaturedArticle { article: article.clone() }
                                 }
                             } else {
                                 rsx! {
-                                    div { class: "text-center py-12 bg-base-200 rounded-xl", "No articles found." }
+                                    div { class: "surface p-12 text-center text-base-content/50",
+                                        "No articles yet."
+                                    }
                                 }
                             }
+                        }
+                        _ => rsx! {
+                            div { class: "skeleton-shimmer h-64" }
                         },
-                        _ => rsx! { BlogSkeleton {} }
                     }
                 }
             }
 
-            // Recent Writing Section
-            div {
-                h2 {
-                    class: "text-xl font-bold mb-6 flex items-center gap-2",
-                    span { class: "w-2 h-6 bg-secondary rounded-full" }
-                    "Recent Writing"
-                }
-                
-                div {
-                    class: "grid gap-6 md:grid-cols-2",
+            // ---- Recent ----
+            section {
+                SectionHeading { accent_class: "bg-secondary", title: "Recent writing" }
+
+                div { class: "grid gap-5 md:grid-cols-2",
                     {
                         match home_data.read().as_ref() {
                             Some(Some(data)) => {
-                                let recent_articles: Vec<ArticleWithMetadata> = data.recent_articles
+                                let recent: Vec<ArticleWithMetadata> = data
+                                    .recent_articles
                                     .iter()
                                     .skip(1)
+                                    .take(4)
                                     .cloned()
                                     .collect();
-
                                 rsx! {
-                                    for article in recent_articles.iter().take(4) {
-                                        ArticleCard {
-                                            article: article.clone()
-                                        }
+                                    for (i , article) in recent.iter().enumerate() {
+                                        ArticleCard { key: "{article.metadata.path}", article: article.clone(), index: i }
                                     }
-                                    
-                                    // See all button
                                     Link {
                                         to: "/articles",
-                                        class: "md:col-span-2 py-4 rounded-xl border border-dashed border-base-300 flex items-center justify-center text-primary font-medium hover:bg-base-200 transition-colors",
-                                        "View All Articles →"
+                                        class: "md:col-span-2 group py-5 rounded-[var(--radius-box)] border border-dashed border-[var(--hairline-strong)] flex items-center justify-center gap-2 text-primary font-semibold hover:bg-primary/5 hover:border-primary/50 transition-all duration-400",
+                                        "data-reveal": "true",
+                                        "Every article"
+                                        svg {
+                                            class: "w-4 h-4 transition-transform duration-300 group-hover:translate-x-1.5",
+                                            fill: "none",
+                                            stroke: "currentColor",
+                                            stroke_width: "2",
+                                            view_box: "0 0 24 24",
+                                            xmlns: "http://www.w3.org/2000/svg",
+                                            path { stroke_linecap: "round", stroke_linejoin: "round", d: "M9 5l7 7-7 7" }
+                                        }
                                     }
                                 }
-                            },
-                            _ => rsx! {
-                                for _ in 0..4 {
-                                    div { class: "h-48 bg-base-200 animate-pulse rounded-xl" }
-                                }
                             }
+                            _ => rsx! {
+                                for i in 0..4 {
+                                    div { key: "{i}", class: "skeleton-shimmer h-44" }
+                                }
+                            },
                         }
                     }
                 }
             }
+        }
+    }
+}
+
+#[component]
+fn SectionHeading(accent_class: String, title: String) -> Element {
+    rsx! {
+        div { class: "flex items-center gap-3 mb-6", "data-reveal": "true",
+            span { class: "h-5 w-[3px] rounded-full {accent_class}" }
+            h2 { class: "text-xl font-semibold", "{title}" }
+            span { class: "flex-1 h-px bg-[var(--hairline)]" }
         }
     }
 }
 
 #[component]
 fn FeaturedArticle(article: ArticleWithMetadata) -> Element {
-    let thumbnail = article.toml_metadata.as_ref().and_then(|m| m.thumbnail.clone());
-    let date = article.toml_metadata.as_ref().and_then(|m| m.date.clone()).unwrap_or_default();
-    let category = article.toml_metadata.as_ref().and_then(|m| m.category.clone()).unwrap_or_else(|| "Deep Dive".to_string());
-    let summary = article.toml_metadata.as_ref().and_then(|m| m.summary.clone()).unwrap_or_else(|| {
-        article.content.chars().take(200).collect::<String>() + "..."
+    let meta = article.toml_metadata.as_ref();
+    let thumbnail = meta.and_then(|m| m.thumbnail.clone());
+    let date = meta.and_then(|m| m.date.clone()).unwrap_or_default();
+    let category = meta
+        .and_then(|m| m.category.clone())
+        .unwrap_or_else(|| "Deep dive".to_string());
+    let read_time = meta.and_then(|m| m.reading_time.clone());
+    let summary = meta.and_then(|m| m.summary.clone()).unwrap_or_else(|| {
+        article.content.chars().take(220).collect::<String>() + "…"
     });
+    let href = format!("/article/{}", article.metadata.path.trim_end_matches(".md"));
 
     rsx! {
-        div {
-            class: "rounded-xl overflow-hidden shadow-lg transition-all hover:shadow-xl border border-base-300 bg-base-100",
-            div {
-                class: "md:flex",
-                // Visual / Thumbnail
-                div {
-                    class: "md:w-2/5 h-48 md:h-auto bg-gradient-to-br from-primary/20 to-secondary/20 relative overflow-hidden flex items-center justify-center",
-                    if let Some(src) = thumbnail {
-                        img {
-                            src: "{src}",
-                            class: "absolute inset-0 w-full h-full object-cover opacity-80"
-                        }
-                    } else {
-                        svg { class: "w-20 h-20 opacity-20 text-primary", fill: "none", stroke: "currentColor", view_box: "0 0 24 24", xmlns: "http://www.w3.org/2000/svg",
-                            path { stroke_linecap: "round", stroke_linejoin: "round", stroke_width: "1.5", d: "M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.67.335a2 2 0 01-1.286.172l-1.63-.408a2 2 0 01-1.327-1.185l-1.012-2.53a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.67.335a2 2 0 01-1.286.172l-1.63-.408a2 2 0 01-1.327-1.185l-1.012-2.53a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.67.335a2 2 0 01-1.286.172l-1.63-.408a2 2 0 01-1.327-1.185l-1.012-2.53a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.67.335a2 2 0 01-1.286.172l-1.63-.408a2 2 0 01-1.327-1.185l-1.012-2.53z" }
-                        }
-                    }
-                }
-                // Content
-                div {
-                    class: "p-6 md:p-8 md:w-3/5 flex flex-col justify-center",
-                    div {
-                        class: "flex items-center gap-3 text-xs font-semibold uppercase tracking-wider mb-2",
-                        span { class: "text-primary", "{category}" }
-                        span { class: "text-base-content/50 flex items-center gap-1", 
-                            svg { class: "w-3 h-3", fill: "none", stroke: "currentColor", view_box: "0 0 24 24", xmlns: "http://www.w3.org/2000/svg",
-                                path { stroke_linecap: "round", stroke_linejoin: "round", stroke_width: "2", d: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" }
+        div { "data-reveal": "true",
+            Link {
+                to: href,
+                class: "surface card-interactive card-spotlight group block overflow-hidden p-0",
+
+                div { class: "md:flex",
+                    // ---- cover ----
+                    div { class: "md:w-2/5 relative h-52 md:h-auto md:min-h-[15rem] overflow-hidden border-b md:border-b-0 md:border-r border-[var(--hairline)]",
+                        if let Some(src) = thumbnail {
+                            img {
+                                src: "{src}",
+                                alt: "",
+                                class: "absolute inset-0 w-full h-full object-cover transition-transform duration-[1100ms] ease-[cubic-bezier(.22,1,.36,1)] group-hover:scale-105",
                             }
-                            "{date}" 
+                        } else {
+                            CoverArt { seed: "{article.metadata.title}", accent: "var(--color-primary)" }
                         }
                     }
-                    Link {
-                        to: format!("/article/{}", article.metadata.path.trim_end_matches(".md")),
-                        class: "text-2xl font-bold mb-3 hover:text-primary transition-colors cursor-pointer block",
-                        "{article.metadata.title}"
-                    }
-                    p {
-                        class: "mb-4 line-clamp-3 text-base-content/70",
-                        "{summary}"
-                    }
-                    Link {
-                        to: format!("/article/{}", article.metadata.path.trim_end_matches(".md")),
-                        class: "inline-flex items-center text-primary hover:text-primary-focus font-medium text-sm group",
-                        "Read Article"
-                        svg { class: "ml-1 w-4 h-4 group-hover:translate-x-1 transition-transform", fill: "none", stroke: "currentColor", view_box: "0 0 24 24", xmlns: "http://www.w3.org/2000/svg",
-                            path { stroke_linecap: "round", stroke_linejoin: "round", stroke_width: "2", d: "M9 5l7 7-7 7" }
+
+                    // ---- text ----
+                    div { class: "p-7 md:p-8 md:w-3/5 flex flex-col justify-center relative z-[2]",
+                        div { class: "flex flex-wrap items-center gap-2 mb-3",
+                            span { class: "chip", style: "color: var(--color-primary);", "{category}" }
+                            if !date.is_empty() {
+                                span { class: "chip", "{date}" }
+                            }
+                            if let Some(rt) = read_time {
+                                span { class: "chip", "{rt}" }
+                            }
+                        }
+
+                        h3 { class: "text-2xl md:text-[1.7rem] leading-snug font-semibold mb-3 transition-colors duration-300 group-hover:text-primary",
+                            "{article.metadata.title}"
+                        }
+
+                        p { class: "text-base-content/65 leading-relaxed line-clamp-3 mb-5", "{summary}" }
+
+                        span { class: "inline-flex items-center gap-1.5 text-primary font-semibold text-sm",
+                            "Read article"
+                            svg {
+                                class: "w-4 h-4 transition-transform duration-300 group-hover:translate-x-1.5",
+                                fill: "none",
+                                stroke: "currentColor",
+                                stroke_width: "2",
+                                view_box: "0 0 24 24",
+                                xmlns: "http://www.w3.org/2000/svg",
+                                path { stroke_linecap: "round", stroke_linejoin: "round", d: "M9 5l7 7-7 7" }
+                            }
                         }
                     }
                 }
@@ -155,55 +168,46 @@ fn FeaturedArticle(article: ArticleWithMetadata) -> Element {
 }
 
 #[component]
-fn ArticleCard(article: ArticleWithMetadata) -> Element {
-    let date = article.toml_metadata.as_ref().and_then(|m| m.date.clone()).unwrap_or_default();
-    let category = article.toml_metadata.as_ref().and_then(|m| m.category.clone()).unwrap_or_else(|| "Article".to_string());
-    let read_time = article.toml_metadata.as_ref().and_then(|m| m.reading_time.clone()).unwrap_or_else(|| "5 min read".to_string());
-    let summary = article.toml_metadata.as_ref().and_then(|m| m.summary.clone()).unwrap_or_else(|| {
-        article.content.chars().take(150).collect::<String>() + "..."
+fn ArticleCard(article: ArticleWithMetadata, index: usize) -> Element {
+    let meta = article.toml_metadata.as_ref();
+    let date = meta.and_then(|m| m.date.clone()).unwrap_or_default();
+    let category = meta
+        .and_then(|m| m.category.clone())
+        .unwrap_or_else(|| "Article".to_string());
+    let read_time = meta
+        .and_then(|m| m.reading_time.clone())
+        .unwrap_or_else(|| "5 min read".to_string());
+    let summary = meta.and_then(|m| m.summary.clone()).unwrap_or_else(|| {
+        article.content.chars().take(150).collect::<String>() + "…"
     });
+    let href = format!("/article/{}", article.metadata.path.trim_end_matches(".md"));
+    let delay = (index % 4) * 70;
 
     rsx! {
-        Link {
-            to: format!("/article/{}", article.metadata.path.trim_end_matches(".md")),
-            class: "rounded-xl p-5 border border-base-300 bg-base-100 transition-all hover:-translate-y-1 hover:shadow-lg hover:border-primary/50 group cursor-pointer block",
-            div {
-                class: "flex items-center justify-between mb-3",
-                div {
-                    class: "flex items-center gap-2 text-xs",
-                    span { class: "px-2 py-1 rounded-md font-medium bg-base-200 text-base-content/70", "{category}" }
-                    span { class: "text-base-content/40", "{read_time}" }
+        div { "data-reveal": "true", style: "--reveal-delay: {delay}ms", class: "h-full",
+            Link {
+                to: href,
+                class: "surface card-interactive card-spotlight group flex flex-col h-full p-5",
+
+                div { class: "flex items-center justify-between gap-2 mb-3 relative z-[2]",
+                    span { class: "chip", "{category}" }
+                    span { class: "eyebrow text-[0.58rem]", "{read_time}" }
                 }
-                span { class: "text-xs text-base-content/40", "{date}" }
-            }
-            h3 {
-                class: "text-lg font-bold mb-2 group-hover:text-primary transition-colors line-clamp-2",
-                "{article.metadata.title}"
-            }
-            p {
-                class: "text-sm line-clamp-3 text-base-content/60",
-                "{summary}"
-            }
-        }
-    }
-}
 
-#[component]
-fn BlogSkeleton() -> Element {
-    rsx! {
-        div {
-            class: "animate-pulse rounded-xl border border-base-300 bg-base-100 h-64 flex flex-col md:flex-row",
-            div { class: "md:w-2/5 bg-base-200 h-48 md:h-auto" }
-            div {
-                class: "p-6 md:p-8 md:w-3/5 space-y-4",
-                div { class: "h-4 bg-base-200 rounded w-1/4" }
-                div { class: "h-8 bg-base-200 rounded w-3/4" }
-                div { class: "space-y-2",
-                    div { class: "h-4 bg-base-200 rounded" }
-                    div { class: "h-4 bg-base-200 rounded w-5/6" }
+                h3 { class: "text-lg font-semibold leading-snug mb-2 line-clamp-2 transition-colors duration-300 group-hover:text-primary relative z-[2]",
+                    "{article.metadata.title}"
+                }
+
+                p { class: "text-sm text-base-content/60 leading-relaxed line-clamp-3 flex-1 relative z-[2]",
+                    "{summary}"
+                }
+
+                if !date.is_empty() {
+                    p { class: "eyebrow text-[0.58rem] mt-4 pt-3 border-t border-[var(--hairline)] relative z-[2]",
+                        "{date}"
+                    }
                 }
             }
         }
     }
 }
-

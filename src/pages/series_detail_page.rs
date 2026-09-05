@@ -1,151 +1,97 @@
+use crate::markdown_management::{ArticleWithMetadata, fetch_series_by_name};
 use dioxus::prelude::*;
-use crate::markdown_management::fetch_series_by_name;
 use dioxus_markdown::Markdown;
 
 #[component]
 pub fn SeriesDetailPage(series_name: String) -> Element {
-    // Fetch series data from server
     let series_data = use_resource(move || {
         let name = series_name.clone();
         async move { fetch_series_by_name(name).await.ok() }
     });
 
     rsx! {
-        main {
-            class: "flex-1 overflow-y-auto p-8",
-            div {
-                class: "container mx-auto max-w-5xl",
+        main { class: "flex-1 overflow-y-auto", "data-scroll-root": "true",
+            div { class: "max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12",
 
-                // Content
-                match series_data.read().as_ref() {
-                    Some(Some(series)) => rsx! {
-                        div {
-                            class: "space-y-8",
+                Link {
+                    to: "/series",
+                    class: "group inline-flex items-center gap-1.5 mb-9 text-sm font-medium text-base-content/60 hover:text-primary transition-colors duration-300",
+                    svg {
+                        class: "w-4 h-4 transition-transform duration-300 group-hover:-translate-x-1",
+                        fill: "none",
+                        stroke: "currentColor",
+                        stroke_width: "2",
+                        view_box: "0 0 24 24",
+                        xmlns: "http://www.w3.org/2000/svg",
+                        path { stroke_linecap: "round", stroke_linejoin: "round", d: "M15 19l-7-7 7-7" }
+                    }
+                    "All series"
+                }
 
-                            // Back button
-                            div {
-                                class: "mb-4",
-                                Link {
-                                    to: "/series",
-                                    class: "btn btn-ghost btn-sm gap-2",
-                                    svg {
-                                        xmlns: "http://www.w3.org/2000/svg",
-                                        class: "h-4 w-4",
-                                        fill: "none",
-                                        view_box: "0 0 24 24",
-                                        stroke: "currentColor",
-                                        path {
-                                            stroke_linecap: "round",
-                                            stroke_linejoin: "round",
-                                            stroke_width: "2",
-                                            d: "M15 19l-7-7 7-7"
-                                        }
-                                    }
-                                    "Back to Series"
-                                }
-                            }
-
-                            // Header
-                            div {
-                                class: "mb-8",
-                                h1 {
-                                    class: "text-4xl font-bold mb-4",
-                                    "{series.name}"
-                                }
-                                div {
-                                    class: "flex gap-2 items-center",
-                                    {
-                                        let article_label = if series.total_articles == 1 { "article" } else { "articles" };
-                                        rsx! {
-                                            span {
-                                                class: "badge badge-primary badge-lg",
-                                                "{series.total_articles} {article_label}"
-                                            }
-                                        }
+                {
+                    match series_data.read().as_ref() {
+                        Some(Some(series)) => {
+                            let label = if series.total_articles == 1 { "part" } else { "parts" };
+                            rsx! {
+                                header { class: "mb-10", "data-reveal": "true",
+                                    p { class: "eyebrow mb-3", "Series · {series.total_articles} {label}" }
+                                    h1 { class: "text-4xl md:text-5xl font-semibold text-gradient animate-gradient-pan",
+                                        "{series.name}"
                                     }
                                 }
-                            }
-
-                            // Long summary/description
-                            if let Some(ref long_summary) = series.long_summary {
-                                article {
-                                    class: "card card-lg bg-base-200 mb-8",
+                                if let Some(ref long_summary) = series.long_summary {
                                     div {
-                                        class: "card-body prose prose-lg max-w-none",
-                                        Markdown {
-                                            content: long_summary.clone()
+                                        class: "surface p-7 md:p-9 mb-10",
+                                        "data-reveal": "true",
+                                        style: "--reveal-delay: 80ms",
+                                        div { class: "prose max-w-none",
+                                            Markdown { content: long_summary.clone() }
                                         }
                                     }
                                 }
-                            }
-
-                            // Articles list
-                            div {
-                                class: "space-y-4",
-                                h2 {
-                                    class: "text-2xl font-bold mb-4",
-                                    "Articles in this series"
-                                }
-
-                                if series.articles.is_empty() {
-                                    div {
-                                        class: "text-center py-8",
-                                        p {
-                                            class: "text-lg text-base-content opacity-70",
-                                            "No articles in this series yet."
-                                        }
+                                section {
+                                    div { class: "flex items-center gap-3 mb-6", "data-reveal": "true",
+                                        span { class: "h-5 w-[3px] rounded-full bg-primary" }
+                                        h2 { class: "text-xl font-semibold", "In this series" }
+                                        span { class: "flex-1 h-px bg-[var(--hairline)]" }
                                     }
-                                } else {
-                                    div {
-                                        class: "space-y-3",
-                                        for (idx, article) in series.articles.iter().enumerate() {
-                                            ArticleCard {
-                                                article: article.clone(),
-                                                index: idx + 1
+                                    if series.articles.is_empty() {
+                                        div { class: "surface p-14 text-center",
+                                            p { class: "text-base-content/50", "Nothing published in this series yet." }
+                                        }
+                                    } else {
+                                        // A numbered spine runs down the left of the list.
+                                        ol { class: "relative space-y-3 pl-0",
+                                            for (idx , article) in series.articles.iter().enumerate() {
+                                                PartCard {
+                                                    key: "{article.metadata.path}",
+                                                    article: article.clone(),
+                                                    index: idx + 1,
+                                                    is_last: idx + 1 == series.articles.len(),
+                                                }
                                             }
                                         }
                                     }
                                 }
                             }
                         }
-                    },
-                    Some(None) => rsx! {
-                        div {
-                            class: "text-center py-12",
-                            div {
-                                class: "alert alert-error max-w-md mx-auto",
-                                svg {
-                                    xmlns: "http://www.w3.org/2000/svg",
-                                    class: "stroke-current shrink-0 h-6 w-6",
-                                    fill: "none",
-                                    view_box: "0 0 24 24",
-                                    path {
-                                        stroke_linecap: "round",
-                                        stroke_linejoin: "round",
-                                        stroke_width: "2",
-                                        d: "M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-                                    }
+                        Some(None) => rsx! {
+                            div { class: "surface p-14 text-center",
+                                h2 { class: "text-xl font-semibold mb-2", "Series not found" }
+                                p { class: "text-base-content/55 mb-6",
+                                    "That series either moved or never existed."
                                 }
-                                span { "Series not found" }
+                                Link { to: "/series", class: "btn-solid", "Back to all series" }
                             }
-                            Link {
-                                to: "/series",
-                                class: "btn btn-primary mt-4",
-                                "Back to Series"
+                        },
+                        None => rsx! {
+                            div { class: "space-y-3",
+                                div { class: "skeleton-shimmer h-28 mb-8" }
+                                for i in 0..4 {
+                                    div { key: "{i}", class: "skeleton-shimmer h-24" }
+                                }
                             }
-                        }
-                    },
-                    None => rsx! {
-                        div {
-                            class: "text-center py-12",
-                            span {
-                                class: "loading loading-spinner loading-lg"
-                            }
-                            p {
-                                class: "mt-4 text-base-content opacity-70",
-                                "Loading series..."
-                            }
-                        }
+                        },
                     }
                 }
             }
@@ -154,80 +100,64 @@ pub fn SeriesDetailPage(series_name: String) -> Element {
 }
 
 #[component]
-fn ArticleCard(article: crate::markdown_management::ArticleWithMetadata, index: usize) -> Element {
+fn PartCard(article: ArticleWithMetadata, index: usize, is_last: bool) -> Element {
+    let meta = article.toml_metadata.as_ref();
+    let date = meta.and_then(|m| m.date.clone());
+    let reading_time = meta.and_then(|m| m.reading_time.clone());
+    let summary = meta.and_then(|m| m.summary.clone());
+    let href = format!("/article/{}", article.metadata.path.trim_end_matches(".md"));
+    let delay = (index.saturating_sub(1) % 8) * 55;
+
     rsx! {
-        Link {
-            to: format!("/article/{}", article.metadata.path.trim_end_matches(".md")),
-            class: "card card-compact bg-base-100 border-2 border-base-300 hover:border-primary hover:shadow-lg transition-all duration-300",
-            div {
-                class: "card-body",
-                div {
-                    class: "flex items-start gap-4",
+        li {
+            class: "relative list-none",
+            "data-reveal": "true",
+            style: "--reveal-delay: {delay}ms",
 
-                    // Index badge
-                    div {
-                        class: "flex-shrink-0",
+            Link {
+                to: href,
+                class: "surface card-interactive card-spotlight group flex items-start gap-4 p-5",
+
+                // Numbered marker, with a connector to the next part.
+                div { class: "relative flex-shrink-0",
+                    span { class: "flex items-center justify-center w-9 h-9 rounded-full font-mono text-sm font-bold bg-primary/12 text-primary border border-primary/25 transition-all duration-400 group-hover:bg-primary group-hover:text-primary-content group-hover:scale-110",
+                        "{index}"
+                    }
+                    if !is_last {
                         span {
-                            class: "badge badge-primary badge-lg",
-                            "{index}"
+                            class: "absolute left-1/2 top-[calc(100%+0.35rem)] h-[calc(100%+0.5rem)] w-px -translate-x-1/2 bg-[var(--hairline)]",
+                            aria_hidden: "true",
+                        }
+                    }
+                }
+
+                div { class: "flex-1 min-w-0 relative z-[2]",
+                    h3 { class: "font-semibold text-lg leading-snug mb-1.5 transition-colors duration-300 group-hover:text-primary",
+                        "{article.metadata.title}"
+                    }
+
+                    div { class: "flex flex-wrap gap-1.5 mb-2",
+                        if let Some(d) = date {
+                            span { class: "chip", "{d}" }
+                        }
+                        if let Some(rt) = reading_time {
+                            span { class: "chip", "{rt}" }
                         }
                     }
 
-                    // Article info
-                    div {
-                        class: "flex-1 min-w-0",
-                        h3 {
-                            class: "font-bold text-lg mb-1",
-                            "{article.metadata.title}"
-                        }
-
-                        // Metadata
-                        if let Some(ref toml_meta) = article.toml_metadata {
-                            div {
-                                class: "flex flex-wrap gap-3 text-sm text-base-content opacity-70",
-
-                                if let Some(ref date) = toml_meta.date {
-                                    span {
-                                        class: "flex items-center gap-1",
-                                        "📅 {date}"
-                                    }
-                                }
-
-                                if let Some(ref reading_time) = toml_meta.reading_time {
-                                    span {
-                                        class: "flex items-center gap-1",
-                                        "⏱️ {reading_time}"
-                                    }
-                                }
-                            }
-
-                            // Summary
-                            if let Some(ref summary) = toml_meta.summary {
-                                p {
-                                    class: "text-base-content opacity-70 mt-2 line-clamp-2",
-                                    "{summary}"
-                                }
-                            }
-                        }
+                    if let Some(text) = summary {
+                        p { class: "text-sm text-base-content/60 leading-relaxed line-clamp-2", "{text}" }
                     }
+                }
 
-                    // Arrow icon
-                    div {
-                        class: "flex-shrink-0",
-                        svg {
-                            xmlns: "http://www.w3.org/2000/svg",
-                            class: "h-6 w-6",
-                            fill: "none",
-                            view_box: "0 0 24 24",
-                            stroke: "currentColor",
-                            path {
-                                stroke_linecap: "round",
-                                stroke_linejoin: "round",
-                                stroke_width: "2",
-                                d: "M9 5l7 7-7 7"
-                            }
-                        }
-                    }
+                svg {
+                    class: "flex-shrink-0 w-5 h-5 mt-2 text-base-content/30 transition-all duration-300 group-hover:text-primary group-hover:translate-x-1",
+                    fill: "none",
+                    stroke: "currentColor",
+                    stroke_width: "2",
+                    view_box: "0 0 24 24",
+                    xmlns: "http://www.w3.org/2000/svg",
+                    path { stroke_linecap: "round", stroke_linejoin: "round", d: "M9 5l7 7-7 7" }
                 }
             }
         }

@@ -1,0 +1,134 @@
+/*
+ * The demo runs in an iframe and mirrors the host site's palette, so the
+ * tokens below intentionally match the `paper` / `ink` themes defined in the
+ * parent's tailwind.css. Hand-rolled rather than pulled from a UI kit — it
+ * keeps the bundle small and the look identical to the rest of the site.
+ */
+
+@font-face {
+  font-family: "Manrope";
+  src: url("/fonts/manrope-latin.woff2") format("woff2");
+  font-weight: 400 800;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Fraunces";
+  src: url("/fonts/fraunces-latin.woff2") format("woff2");
+  font-weight: 300 700;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("/fonts/jetbrains-mono-latin.woff2") format("woff2");
+  font-weight: 400 700;
+  font-display: swap;
+}
+
+:root,
+:root[data-theme="paper"] {
+  color-scheme: light;
+  --base-100: oklch(98.6% 0.004 86);
+  --base-200: oklch(96.3% 0.006 86);
+  --base-300: oklch(92.4% 0.008 86);
+  --content: oklch(24% 0.021 264);
+  --primary: oklch(51% 0.168 259);
+  --primary-content: oklch(98% 0.008 259);
+  --secondary: oklch(54% 0.106 205);
+  --accent: oklch(70% 0.157 61);
+  --success: oklch(58% 0.116 156);
+  --hairline: color-mix(in oklab, var(--content) 11%, transparent);
+  --hairline-strong: color-mix(in oklab, var(--content) 18%, transparent);
+  --surface: color-mix(in oklab, var(--base-100) 82%, transparent);
+  --sunken: color-mix(in oklab, var(--base-200) 70%, transparent);
+  --elev: 0 2px 4px -2px color-mix(in oklab, var(--content) 10%, transparent),
+    0 8px 20px -8px color-mix(in oklab, var(--content) 14%, transparent);
+  --class-a: oklch(51% 0.168 259);
+  --class-b: oklch(70% 0.157 61);
+}
+
+:root[data-theme="ink"] {
+  color-scheme: dark;
+  --base-100: oklch(17.5% 0.014 264);
+  --base-200: oklch(21.5% 0.017 264);
+  --base-300: oklch(27% 0.021 264);
+  --content: oklch(92% 0.011 264);
+  --primary: oklch(73% 0.136 259);
+  --primary-content: oklch(17% 0.04 259);
+  --secondary: oklch(76% 0.093 205);
+  --accent: oklch(80% 0.142 71);
+  --success: oklch(74% 0.106 156);
+  --hairline: color-mix(in oklab, var(--content) 14%, transparent);
+  --hairline-strong: color-mix(in oklab, var(--content) 24%, transparent);
+  --surface: color-mix(in oklab, var(--base-200) 72%, transparent);
+  --sunken: color-mix(in oklab, var(--base-100) 70%, transparent);
+  --class-a: oklch(73% 0.136 259);
+  --class-b: oklch(80% 0.142 71);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: transparent;
+  color: var(--content);
+  font-family: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: "kern";
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+h1,
+h2,
+h3 {
+  font-family: "Fraunces", Georgia, serif;
+  letter-spacing: -0.02em;
+  font-variation-settings: "SOFT" 0, "WONK" 1;
+  margin: 0;
+}
+
+code,
+pre {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--primary) 26%, transparent);
+}
+
+*::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--hairline-strong);
+  border: 2px solid transparent;
+  background-clip: content-box;
+  border-radius: 999px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

@@ -1,0 +1,40 @@
+# BuildKit reads <dockerfile-name>.dockerignore in preference to .dockerignore,
+# so this file applies only to `docker build -f Dockerfile.local`.
+#
+# The root .dockerignore excludes target/ entirely, which is right for the
+# full build but would hide the very bundle Dockerfile.local packages. Here we
+# keep target/ but send only the finished 11 MB web bundle.
+
+.git
+.gitignore
+
+# Everything under target/ except the built web bundle.
+target/*
+!target/dx
+target/dx/*
+!target/dx/blogger
+target/dx/blogger/*
+!target/dx/blogger/release
+target/dx/blogger/release/*
+!target/dx/blogger/release/web
+
+dist/
+
+node_modules/
+**/node_modules/
+
+react_demo/
+svelte_demo/
+
+.vscode/
+.idea/
+.claude/
+
+*.log
+*.md
+!aboutme.md
+!articles/**/*.md
+.env
+.DS_Store
+__pycache__/
+*.pyc

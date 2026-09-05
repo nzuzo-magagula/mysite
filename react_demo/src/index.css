@@ -2,7 +2,142 @@
 @tailwind components;
 @tailwind utilities;
 
-.custom-scrollbar::-webkit-scrollbar { width: 6px; }
-.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-.custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
+/*
+ * The parent site drives the palette by setting data-theme on this iframe's
+ * <html>. It ships two hand-built themes, `paper` and `ink`, which are not
+ * daisyUI presets — so redefine daisyUI's colour variables under those
+ * selectors here. Every `bg-base-100` / `text-primary` utility already reads
+ * these variables, so nothing else has to change.
+ *
+ * Keep these values in sync with `tailwind.css` at the repository root.
+ */
+
+[data-theme="paper"] {
+  color-scheme: light;
+
+  --color-base-100: oklch(98.6% 0.004 86);
+  --color-base-200: oklch(96.3% 0.006 86);
+  --color-base-300: oklch(92.4% 0.008 86);
+  --color-base-content: oklch(24% 0.021 264);
+
+  --color-primary: oklch(51% 0.168 259);
+  --color-primary-content: oklch(98% 0.008 259);
+  --color-secondary: oklch(54% 0.106 205);
+  --color-secondary-content: oklch(98% 0.008 205);
+  --color-accent: oklch(70% 0.157 61);
+  --color-accent-content: oklch(21% 0.05 61);
+
+  --color-neutral: oklch(29% 0.022 264);
+  --color-neutral-content: oklch(96% 0.005 264);
+
+  --color-info: oklch(60% 0.114 231);
+  --color-info-content: oklch(98% 0.008 231);
+  --color-success: oklch(58% 0.116 156);
+  --color-success-content: oklch(98% 0.008 156);
+  --color-warning: oklch(72% 0.152 76);
+  --color-warning-content: oklch(21% 0.05 76);
+  --color-error: oklch(58% 0.191 22);
+  --color-error-content: oklch(98% 0.008 22);
+
+  --radius-selector: 0.5rem;
+  --radius-field: 0.625rem;
+  --radius-box: 0.875rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+[data-theme="ink"] {
+  color-scheme: dark;
+
+  --color-base-100: oklch(17.5% 0.014 264);
+  --color-base-200: oklch(21.5% 0.017 264);
+  --color-base-300: oklch(27% 0.021 264);
+  --color-base-content: oklch(92% 0.011 264);
+
+  --color-primary: oklch(73% 0.136 259);
+  --color-primary-content: oklch(17% 0.04 259);
+  --color-secondary: oklch(76% 0.093 205);
+  --color-secondary-content: oklch(17% 0.03 205);
+  --color-accent: oklch(80% 0.142 71);
+  --color-accent-content: oklch(19% 0.05 71);
+
+  --color-neutral: oklch(26% 0.019 264);
+  --color-neutral-content: oklch(90% 0.01 264);
+
+  --color-info: oklch(74% 0.098 231);
+  --color-info-content: oklch(17% 0.03 231);
+  --color-success: oklch(74% 0.106 156);
+  --color-success-content: oklch(17% 0.03 156);
+  --color-warning: oklch(82% 0.135 76);
+  --color-warning-content: oklch(19% 0.05 76);
+  --color-error: oklch(70% 0.152 22);
+  --color-error-content: oklch(17% 0.04 22);
+
+  --radius-selector: 0.5rem;
+  --radius-field: 0.625rem;
+  --radius-box: 0.875rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+/* Match the host site's type stack. The faces are served by the parent at
+   /fonts, so they are already cached by the time this frame loads. */
+@font-face {
+  font-family: "Manrope";
+  src: url("/fonts/manrope-latin.woff2") format("woff2");
+  font-weight: 400 800;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("/fonts/jetbrains-mono-latin.woff2") format("woff2");
+  font-weight: 400 700;
+  font-display: swap;
+}
+
+html,
+body {
+  background: transparent;
+}
+
+body {
+  font-family: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+code,
+pre,
+.font-mono {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+}
+
+/* Themed scrollbars rather than hard-coded slate. */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: color-mix(in oklab, var(--color-base-content) 22%, transparent);
+  border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in oklab, var(--color-base-content) 36%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

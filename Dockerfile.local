@@ -1,21 +1,48 @@
+# Packages an already-built bundle from the host — no compilation here.
+#
+# Build the bundle first:
+#   npx @tailwindcss/cli -i tailwind.css -o assets/tailwind.css
+#   (cd react_demo  && npm run build)
+#   (cd svelte_demo && npm run build)
+#   dx build --release
+#
+# Then:
+#   docker build -f Dockerfile.local -t blogger:local .
+#   docker run --rm -p 8080:8080 blogger:local
+#
+# Dockerfile.local.dockerignore sits alongside this file; BuildKit picks it up
+# automatically so target/ stays visible for this build only (the root
+# .dockerignore excludes it, which is correct for the full Dockerfile).
+
 FROM debian:bookworm-slim AS runtime
 
-# Install required runtime dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy pre-built bundle from local machine
-COPY target/dx/blogger/release/web/ /app
+WORKDIR /app
 
-# Copy articles folder
-COPY articles /app/articles
+# dx names the binary `server` in its output directory; the entrypoint below
+# matches that rather than the crate name.
+COPY target/dx/blogger/release/web/server ./server
+COPY target/dx/blogger/release/web/public ./public
 
-# Set environment variables
+COPY articles ./articles
+COPY aboutme.md ./aboutme.md
+
 ENV PORT=8080
 ENV IP=0.0.0.0
-
+ENV DIOXUS_ASSET_DIR=/app/public
 EXPOSE 8080
 
-WORKDIR /app
-ENTRYPOINT [ "/app/blogger" ]
+RUN chmod +x ./server
+
+RUN useradd --system --uid 10001 --no-create-home blogger \
+    && chown -R blogger:blogger /app
+USER blogger
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+    CMD curl -fsS "http://127.0.0.1:${PORT}/" > /dev/null || exit 1
+
+ENTRYPOINT [ "/app/server" ]

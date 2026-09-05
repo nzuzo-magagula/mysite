@@ -47,13 +47,14 @@ pub fn ArticlePage(path: String) -> Element {
 
             // Main content area
             div {
-                class: "flex-1 overflow-y-auto p-4 md:p-8 pb-32 md:pb-8",
+                class: "flex-1 overflow-y-auto px-4 md:px-8 py-8 pb-32 md:pb-12",
+                "data-scroll-root": "true",
                 div {
-                    class: "container mx-auto max-w-4xl",
+                    class: "mx-auto max-w-4xl",
                 article {
-                    class: "card card-xl",
+                    class: "surface p-6 md:p-10",
                     section {
-                        class: "card-body",
+                        class: "",
                     {
                         match article_data.read().as_ref() {
                             Some(Ok(article)) => {
@@ -94,7 +95,7 @@ pub fn ArticlePage(path: String) -> Element {
                                                     if let Some(ref meta) = article.toml_metadata {
                                                         if !meta.tags.is_empty() {
                                                             div {
-                                                                class: "border-t border-base-300 pt-6 mt-8",
+                                                                class: "border-t border-[var(--hairline)] pt-6 mt-8",
                                                                 h3 {
                                                                     class: "text-lg font-semibold mb-3",
                                                                     "Tags"
@@ -103,7 +104,7 @@ pub fn ArticlePage(path: String) -> Element {
                                                                     class: "flex flex-wrap gap-2",
                                                                     for tag in &meta.tags {
                                                                         span {
-                                                                            class: "badge h-fit badge-outline badge-lg",
+                                                                            class: "chip h-fit",
                                                                             "#{tag}"
                                                                         }
                                                                     }
@@ -127,7 +128,7 @@ pub fn ArticlePage(path: String) -> Element {
                                                                     class: "space-y-4",
                                                                     for (index, reference) in meta.references.iter().enumerate() {
                                                                         div {
-                                                                            class: "card card-sm bg-base-200 hover:bg-base-300 transition-colors",
+                                                                            class: "surface-sunken p-4 transition-colors duration-300 hover:border-primary/35",
                                                                             div {
                                                                                 class: "card-body",
                                                                                 div {
@@ -135,7 +136,7 @@ pub fn ArticlePage(path: String) -> Element {
 
                                                                                     // Reference number badge
                                                                                     span {
-                                                                                        class: "badge badge-primary badge-lg shrink-0 mt-1",
+                                                                                        class: "flex items-center justify-center w-7 h-7 rounded-full font-mono text-xs font-bold bg-primary/12 text-primary border border-primary/25 shrink-0 mt-0.5",
                                                                                         "{index + 1}"
                                                                                     }
 
@@ -252,9 +253,9 @@ pub fn ArticlePage(path: String) -> Element {
                             },
                             Some(Err(e)) => rsx! {
                                 div {
-                                    class: "alert alert-error",
-                                    h3 { "Error Loading Article" }
-                                    p { "{e}" }
+                                    class: "surface p-10 text-center border-error/30",
+                                    h3 { class: "text-xl font-semibold mb-2 text-error", "Could not load this article" }
+                                    p { class: "text-sm font-mono text-base-content/55 break-all", "{e}" }
                                 }
                             },
                             None => rsx! {
@@ -272,7 +273,7 @@ pub fn ArticlePage(path: String) -> Element {
                 if let Some(Ok(article)) = article_data.read().as_ref() {
                     rsx! {
                         div {
-                            class: "hidden md:block md:w-80 lg:w-96 border-l border-base-300 bg-base-100 overflow-y-auto",
+                            class: "hidden md:block md:w-80 lg:w-96 border-l border-[var(--hairline)] bg-base-100/45 backdrop-blur-xl overflow-y-auto",
                             RightSidebar {
                                 active_tab: active_tab,
                                 metadata: article.toml_metadata.clone()
@@ -313,7 +314,7 @@ fn RightSidebar(active_tab: Signal<String>, metadata: Option<ArticleTomlMetadata
             // Navigation section at top
             if let Some(ref meta) = metadata {
                 div {
-                    class: "p-4 border-b border-base-300",
+                    class: "p-4 border-b border-[var(--hairline)]",
                     h3 {
                         class: "text-sm font-semibold mb-3 opacity-70",
                         "Navigate"
@@ -327,7 +328,7 @@ fn RightSidebar(active_tab: Signal<String>, metadata: Option<ArticleTomlMetadata
                                 div {
                                     class: "mb-3",
                                     span {
-                                        class: "badge badge-sm badge-primary",
+                                        class: "chip",
                                         "{series.name}"
                                     }
                                 }
@@ -345,14 +346,14 @@ fn RightSidebar(active_tab: Signal<String>, metadata: Option<ArticleTomlMetadata
                                     if let Some(ref prev) = series.prev {
                                         NavigationButton {
                                             to: format!("/article/{}", prev),
-                                            class: "btn btn-sm btn-outline flex-1",
+                                            class: "pill pill--off flex-1 text-center",
                                             label: "← Prev"
                                         }
                                     }
                                     if let Some(ref next) = series.next {
                                         NavigationButton {
                                             to: format!("/article/{}", next),
-                                            class: "btn btn-sm btn-primary flex-1",
+                                            class: "pill pill--on flex-1 text-center",
                                             label: "Next →"
                                         }
                                     }
@@ -362,14 +363,14 @@ fn RightSidebar(active_tab: Signal<String>, metadata: Option<ArticleTomlMetadata
                             if let Some(ref prev) = meta.prev_article {
                                 NavigationButton {
                                     to: format!("/article/{}", prev),
-                                    class: "btn btn-sm btn-outline flex-1",
+                                    class: "pill pill--off flex-1 text-center",
                                     label: "← Prev"
                                 }
                             }
                             if let Some(ref next) = meta.next_article {
                                 NavigationButton {
                                     to: format!("/article/{}", next),
-                                    class: "btn btn-sm btn-primary flex-1",
+                                    class: "pill pill--on flex-1 text-center",
                                     label: "Next →"
                                 }
                             }
@@ -392,9 +393,9 @@ fn RightSidebar(active_tab: Signal<String>, metadata: Option<ArticleTomlMetadata
                     // Article tab
                     button {
                         class: if active_tab.read().as_str() == "article" {
-                            "btn btn-sm btn-primary justify-start"
+                            "pill pill--on w-full text-left justify-start"
                         } else {
-                            "btn btn-sm btn-ghost justify-start"
+                            "pill pill--off w-full text-left justify-start"
                         },
                         onclick: move |_| active_tab.set("article".to_string()),
                         "📄 Article"
@@ -404,9 +405,9 @@ fn RightSidebar(active_tab: Signal<String>, metadata: Option<ArticleTomlMetadata
                     if metadata.as_ref().map(|m| m.show_references).unwrap_or(true) {
                         button {
                             class: if active_tab.read().as_str() == "references" {
-                                "btn btn-sm btn-primary justify-start"
+                                "pill pill--on w-full text-left justify-start"
                             } else {
-                                "btn btn-sm btn-ghost justify-start"
+                                "pill pill--off w-full text-left justify-start"
                             },
                             onclick: move |_| active_tab.set("references".to_string()),
                             "📚 References"
@@ -417,9 +418,9 @@ fn RightSidebar(active_tab: Signal<String>, metadata: Option<ArticleTomlMetadata
                     if metadata.as_ref().map(|m| m.show_demo).unwrap_or(false) {
                         button {
                             class: if active_tab.read().as_str() == "demo" {
-                                "btn btn-sm btn-primary justify-start"
+                                "pill pill--on w-full text-left justify-start"
                             } else {
-                                "btn btn-sm btn-ghost justify-start"
+                                "pill pill--off w-full text-left justify-start"
                             },
                             onclick: move |_| active_tab.set("demo".to_string()),
                             "▶️ Demo"
@@ -430,9 +431,9 @@ fn RightSidebar(active_tab: Signal<String>, metadata: Option<ArticleTomlMetadata
                     if metadata.as_ref().map(|m| m.show_related).unwrap_or(false) {
                         button {
                             class: if active_tab.read().as_str() == "related" {
-                                "btn btn-sm btn-primary justify-start"
+                                "pill pill--on w-full text-left justify-start"
                             } else {
-                                "btn btn-sm btn-ghost justify-start"
+                                "pill pill--off w-full text-left justify-start"
                             },
                             onclick: move |_| active_tab.set("related".to_string()),
                             "⚡ Related"
@@ -443,9 +444,9 @@ fn RightSidebar(active_tab: Signal<String>, metadata: Option<ArticleTomlMetadata
                     if metadata.as_ref().map(|m| m.show_quiz).unwrap_or(false) {
                         button {
                             class: if active_tab.read().as_str() == "quiz" {
-                                "btn btn-sm btn-primary justify-start"
+                                "pill pill--on w-full text-left justify-start"
                             } else {
-                                "btn btn-sm btn-ghost justify-start"
+                                "pill pill--off w-full text-left justify-start"
                             },
                             onclick: move |_| active_tab.set("quiz".to_string()),
                             "✓ Quiz"
@@ -461,7 +462,7 @@ fn RightSidebar(active_tab: Signal<String>, metadata: Option<ArticleTomlMetadata
 fn ArticleMetadata(metadata: ArticleTomlMetadata) -> Element {
     rsx! {
         div {
-            class: "bg-base-200 rounded-lg p-6 space-y-4",
+            class: "surface-sunken p-6 space-y-4",
 
             // Author and date
             div {
@@ -478,19 +479,13 @@ fn ArticleMetadata(metadata: ArticleTomlMetadata) -> Element {
                 if let Some(ref date) = metadata.date {
                     div {
                         class: "flex items-center gap-2",
-                        span {
-                            class: "badge badge-ghost",
-                            "📅 {date}"
-                        }
+                        span { class: "chip", "{date}" }
                     }
                 }
                 if let Some(ref reading_time) = metadata.reading_time {
                     div {
                         class: "flex items-center gap-2",
-                        span {
-                            class: "badge badge-ghost",
-                            "⏱️ {reading_time}"
-                        }
+                        span { class: "chip", "{reading_time}" }
                     }
                 }
             }
@@ -498,7 +493,7 @@ fn ArticleMetadata(metadata: ArticleTomlMetadata) -> Element {
             // Summary
             if let Some(ref summary) = metadata.summary {
                 div {
-                    class: "text-base-content opacity-70 italic border-l-4 border-primary pl-4",
+                    class: "text-base-content/70 border-l-2 border-primary pl-4 leading-relaxed",
                     p { "{summary}" }
                 }
             }
@@ -508,15 +503,13 @@ fn ArticleMetadata(metadata: ArticleTomlMetadata) -> Element {
                 class: "flex flex-wrap gap-2",
                 if let Some(ref category) = metadata.category {
                     span {
-                        class: "badge badge-primary badge-lg",
+                        class: "chip",
+                        style: "color: var(--color-primary); border-color: color-mix(in oklab, var(--color-primary) 35%, transparent);",
                         "{category}"
                     }
                 }
                 for topic in &metadata.topics {
-                    span {
-                        class: "badge badge-secondary badge-lg",
-                        "{topic}"
-                    }
+                    span { class: "chip", "{topic}" }
                 }
             }
 
@@ -527,7 +520,7 @@ fn ArticleMetadata(metadata: ArticleTomlMetadata) -> Element {
                     img {
                         src: "{thumbnail}",
                         alt: "Article thumbnail",
-                        class: "rounded-lg w-full max-h-96 object-cover"
+                        class: "rounded-[var(--radius-box)] border border-[var(--hairline)] w-full max-h-96 object-cover"
                     }
                 }
             }
@@ -539,7 +532,7 @@ fn ArticleMetadata(metadata: ArticleTomlMetadata) -> Element {
 fn ArticleSkeleton() -> Element {
     rsx! {
         div {
-            class: "animate-pulse space-y-6 p-8",
+            class: "space-y-6 p-2",
 
             // Metadata skeleton
             div {
@@ -581,7 +574,7 @@ fn ArticleSkeleton() -> Element {
 fn BottomNavPanel(active_tab: Signal<String>, metadata: Option<ArticleTomlMetadata>) -> Element {
     rsx! {
         div {
-            class: "dock dock-lg fixed bottom-0 left-0 right-0 z-50 bg-base-100 border-t border-base-300 shadow-lg",
+            class: "fixed bottom-0 left-0 right-0 z-50 surface-flush border-x-0 border-b-0 shadow-[var(--elev-3)]",
 
             // Article Tab (Required)
             button {
@@ -614,7 +607,7 @@ fn BottomNavPanel(active_tab: Signal<String>, metadata: Option<ArticleTomlMetada
                 if let Some(ref meta) = metadata {
                     if !meta.article_series.is_empty() {
                         span {
-                            class: "badge badge-xs badge-outline opacity-60",
+                            class: "chip",
                             "{meta.article_series[0].name}"
                         }
                     }
@@ -631,14 +624,14 @@ fn BottomNavPanel(active_tab: Signal<String>, metadata: Option<ArticleTomlMetada
                                     if let Some(ref prev) = series.prev {
                                         NavigationButton {
                                             to: format!("/article/{}", prev),
-                                            class: "btn btn-xs btn-ghost",
+                                            class: "pill pill--off !px-2.5 !py-1 !text-xs",
                                             label: "← Prev"
                                         }
                                     }
                                     if let Some(ref next) = series.next {
                                         NavigationButton {
                                             to: format!("/article/{}", next),
-                                            class: "btn btn-xs btn-ghost",
+                                            class: "pill pill--off !px-2.5 !py-1 !text-xs",
                                             label: "Next →"
                                         }
                                     }
@@ -649,14 +642,14 @@ fn BottomNavPanel(active_tab: Signal<String>, metadata: Option<ArticleTomlMetada
                             if let Some(ref prev) = meta.prev_article {
                                 NavigationButton {
                                     to: format!("/article/{}", prev),
-                                    class: "btn btn-xs btn-ghost",
+                                    class: "pill pill--off !px-2.5 !py-1 !text-xs",
                                     label: "← Prev"
                                 }
                             }
                             if let Some(ref next) = meta.next_article {
                                 NavigationButton {
                                     to: format!("/article/{}", next),
-                                    class: "btn btn-xs btn-ghost",
+                                    class: "pill pill--off !px-2.5 !py-1 !text-xs",
                                     label: "Next →"
                                 }
                             }
@@ -804,14 +797,14 @@ fn NavigationCards(metadata: ArticleTomlMetadata) -> Element {
 
     rsx! {
         div {
-            class: "border-t border-base-300 pt-8 mt-8",
+            class: "border-t border-[var(--hairline)] pt-8 mt-8",
 
             // Series name badge if available
             if let Some(ref series) = series_name {
                 div {
                     class: "mb-4",
                     span {
-                        class: "badge badge-primary badge-lg",
+                        class: "chip",
                         "{series}"
                     }
                 }
@@ -865,7 +858,7 @@ fn NavigationCard(to: String, direction: String, title: String) -> Element {
     rsx! {
         a {
             href: "{to}",
-            class: "card card-sm bg-base-200 hover:bg-base-300 transition-colors block",
+            class: "surface-sunken p-4 block transition-colors duration-300 hover:border-primary/35",
             div {
                 class: "card-body",
                 div {

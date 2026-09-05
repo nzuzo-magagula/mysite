@@ -39,7 +39,7 @@ I code for passion and for the hope that solutions emerge that can improve the w
 ## Get in Touch
 
 You can find me on [GitHub](https://github.com/nzuzo-newsnet) where I share my work and contribute to open source, or the following emails:
-- nzuzo@newsnet.africa
-- nzuzomagagula@proton.me
+- **General** — [me@nzuzomagagula.online](mailto:me@nzuzomagagula.online)
+- **Development & collaboration** — [dev@nzuzomagagula.online](mailto:dev@nzuzomagagula.online)
 
 If you want to collaborate, discuss ideas, or just talk about what we're building, reach out.
