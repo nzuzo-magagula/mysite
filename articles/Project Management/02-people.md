@@ -13,325 +13,138 @@ next = "Project Management/03-metrics"
 #####
 # People
 
-So far in this series, we have explored how to plan projects and mitigate the risks that arise from their unpredictable nature.
-In this article, we continue that exploration — focusing on **project management through the lens of people management.**
+So far this series has covered how to plan projects and mitigate the risks that come from their unpredictability. This article carries that on, looking at project management through the lens of managing people.
 
----
+## The Human Factor
 
-## The Human Factor in Projects
+The relationship between people and projects is genuinely complicated. People are nuanced, emotional and occasionally unpredictable, and one of the harder parts of project management is organizing them so they can execute something complex together.
 
-The relationship between people and projects is fascinating — and complex.
-People are nuanced, emotional, and sometimes unpredictable. One of the great challenges of project management is managing these *human resources* so that they can execute and complete a complex project together.
-
-While there is no universal formula for managing people, there **are** effective ways to organize them to realize a shared goal.
-
----
+There's no universal formula for managing people. There are still effective ways to organize them around a shared goal.
 
 ## Roles and Responsibilities
 
-The first and most straightforward way to manage people is through **the assignment of roles and responsibilities.**
+The most straightforward way to manage people is by assigning roles and responsibilities.
 
-Humans are uniquely valuable because of their identities — each person brings a different combination of:
-
-* Skills
-* Preferences
-* Strengths
-* Perspectives
-
-When harnessed correctly, these differences become the engine of project success.
-
----
+What makes people valuable is their identities. Each person brings a different mix of skills, preferences, strengths and perspectives, and when those differences are harnessed properly they become the engine of the project.
 
 ### Skills
 
-A strong team is one with **diverse skill sets and experiences.**
-This diversity fuels creativity, but more importantly, it creates resilience — allowing the team to tackle problems from multiple angles.
+A strong team has diverse skill sets and experience. That diversity fuels creativity, but more importantly it creates resilience, because the team can attack problems from several directions.
 
-#### Example: A Mobile App Project
+Imagine a team designing a mobile application. People naturally organize into sub-teams: UI focused on interface design and usability, networking handling data flow and APIs, systems managing backend logic and infrastructure.
 
-Imagine a project team designing a mobile application.
-Naturally, people might organize into sub-teams:
+The benefits of diverse skills go past those obvious divisions, though. A UI expert can't do what a backend developer does and vice versa, but the intangible skills matter just as much.
 
-* **UI Team** – focuses on interface design and usability
-* **Networking Team** – handles data flow and APIs
-* **Systems Team** – manages backend logic and infrastructure
+Someone who communicates well under pressure, or who enjoys presenting, is the obvious choice to lead sprint reviews or stakeholder demos. Their calm and clarity affect both morale and stakeholder confidence.
 
-But the benefits of diverse skills go beyond these obvious divisions.
+Someone who naturally notices inconsistencies and edge cases will excel at code reviews, QA and compliance. Their perceptiveness stops subtle bugs from turning into expensive ones.
 
----
+Someone who senses team tension or unspoken concerns is well suited to user research, stakeholder relations or conflict resolution, where understanding people matters more than understanding code.
 
-#### Technical vs. Non-Technical Strengths
+Using both the tangible and intangible skills improves your chances.
 
-A UI expert may not do what a backend developer can, and vice versa — but *intangible* skills are equally valuable.
+### People are not static
 
-Consider:
+People grow, learn and adapt. On long projects, rigid role definitions lead to stagnation or burnout. Some stability is necessary for continuity, but there should be room for growth and rotation where it makes sense.
 
-* **Public speaking & facilitation skills:**
-  A person who communicates well under pressure or enjoys presenting may be the ideal choice to lead sprint reviews or stakeholder demos. Their calmness and clarity can boost both morale and stakeholder confidence.
+Investing in development pays off in three ways.
 
-* **Attention to detail:**
-  Some people naturally notice inconsistencies or edge cases. Such individuals excel in **code reviews**, **QA**, and **compliance**. Their perceptiveness prevents subtle bugs from turning into costly issues later.
+Cross-team communication improves. When developers understand each other's domains, collaboration gets smoother. A frontend engineer who grasps backend principles will design UI requests that are API-efficient and easier to implement.
 
-* **Empathy and emotional intelligence:**
-  Others are gifted at sensing team tension or unspoken concerns. These individuals thrive in **user research**, **stakeholder relations**, or **conflict resolution** — areas where understanding people is more important than understanding code.
+Teams get more resilient. Cross-trained members can cover for each other. If only one person knows the deployment process, their absence is a risk. If three do, the team stays productive through unexpected changes.
 
-Using both **tangible** and **intangible** skills increases your project’s chance of success.
-
----
-
-### People Are Not Static
-
-Remember: **people grow, learn, and adapt.**
-
-In long-term projects, rigid role definitions can lead to **stagnation or burnout**. While some stability is necessary to maintain continuity, it’s equally important to allow opportunities for growth and rotation where appropriate.
-
----
-
-### Benefits of Skill Development
-
-Investing in your team’s development yields several long-term advantages:
-
-1. **Improved cross-team communication**
-   When developers understand each other’s domains, collaboration becomes smoother.
-
-   > For instance, a frontend engineer who grasps backend principles will design UI requests that are API-efficient and easier to implement.
-
-2. **More resilient, flexible teams**
-   Cross-trained members can fill in for one another.
-
-   > If only one person knows the deployment process, their absence is a risk.
-   > But if three people share that knowledge, the team stays productive even under unexpected changes.
-
-3. **Increased creativity through broader knowledge**
-   Understanding multiple domains allows for innovative bridges between them.
-
-   > A developer familiar with both UX and async operations might propose **optimistic UI updates**, improving both performance and user experience simultaneously.
-
----
+And broader knowledge produces more creativity. Understanding multiple domains lets people build bridges between them. A developer familiar with both UX and async operations might propose optimistic UI updates, improving performance and user experience at once.
 
 ## Range of Duties and Responsibilities
 
-When planning your team, it helps to think in **responsibility clusters** — broad categories of roles that ensure coverage of all critical aspects of project success.
+When planning a team it helps to think in responsibility clusters: broad categories of roles that cover all the critical aspects of the project.
 
----
+### Project management roles
 
-### Project Management Roles
+The project manager, or management team, usually covers several distinct sub-roles.
 
-The **Project Manager** (or management team) often encompasses several distinct sub-roles:
+The strategist defines long-term vision and aligns it with business priorities, balancing technical ambition against business pragmatism. Ship a minimal viable product now or a fully-featured system later?
 
-#### 🧭 Strategist
+The leader motivates the team, creates psychological safety, celebrates wins, and reframes obstacles as learning opportunities.
 
-Defines long-term vision and aligns it with business priorities.
-Balances **technical ambition** with **business pragmatism** — for instance, deciding whether to release a minimal viable product (MVP) now or a fully-featured system later.
+The politician navigates stakeholder politics and competing interests, and translates progress into business language. "ROI improvement" instead of "reduced latency."
 
-#### 🧑‍🤝‍🧑 Leader
+The facilitator keeps processes and meetings productive, recognizes when discussions drift, and keeps collaboration focused and balanced.
 
-Inspires and motivates the team.
-Creates psychological safety, celebrates wins, and reframes obstacles as learning opportunities.
+The administrator manages logistics: budgets, schedules, documentation, compliance. This role enables rather than directs, handling procurement, tracking deliverables and maintaining institutional memory.
 
-#### 🗳️ Politician
+### Systems analyst roles
 
-Navigates stakeholder politics and competing interests.
-Translates project progress into *business language* — e.g., “ROI improvement” instead of “reduced latency.”
+The systems analyst bridges business, users and technical teams.
 
-#### 🧩 Facilitator
+On stakeholder needs, they engage deeply enough to uncover the real need under the stated request. A stakeholder asks for "a dashboard like our competitor's," and the analyst discovers the underlying goal is reducing customer support calls.
 
-Ensures processes and meetings are productive.
-Recognizes when discussions drift off-topic, and keeps collaboration focused and balanced.
+On interaction design, they design workflows that are intuitive and tolerant of stress. In a hospital that might mean clear hierarchies, confirmation prompts, and strong accessibility standards.
 
-#### 🧾 Administrator
+On cost estimation, they produce realistic estimates that account for complexity, integration time, testing and risk, not just development hours.
 
-Manages logistics: budgets, schedules, documentation, and compliance.
-Enables rather than directs — handling procurement, tracking deliverables, and maintaining institutional memory.
+### User interface designer
 
----
+The UI designer shapes how the system feels and communicates. That means visual hierarchy that highlights what matters, consistency that reduces cognitive load, accessibility, and responsiveness across devices.
 
-### Systems Analyst Roles
+On a project dashboard, upcoming deadlines and critical items should dominate the visual space while historical data sits in expandable sections.
 
-The **Systems Analyst** bridges the gap between business, users, and technical teams.
-
-#### 🎯 Stakeholder Needs
-
-Engages deeply to uncover *real* needs beneath stated requests.
-
-> Example: A stakeholder asks for “a dashboard like our competitor’s,” but the analyst discovers the underlying goal is reducing customer support calls.
-
-#### 🧠 Interaction Designer
-
-Designs workflows that are intuitive and stress-tolerant.
-
-> In high-stakes environments like hospitals, this might mean clear hierarchies, confirmation prompts, and strong accessibility standards.
-
-#### 💰 Cost Estimator
-
-Produces realistic estimates by considering complexity, integration time, testing, and risk — not just development hours.
-
----
-
-### User Interface Designer
-
-The **UI Designer** crafts how the system *feels* and *communicates*.
-
-They ensure:
-
-* **Visual hierarchy** – highlights what matters
-* **Consistency** – reduces cognitive load
-* **Accessibility** – ensures inclusivity
-* **Responsiveness** – adapts to multiple devices
-
-> Example: On a project dashboard, upcoming deadlines and critical items should dominate visual space, while historical data is tucked into expandable sections.
-
-They also maintain a **design system** — a living style guide ensuring consistency across components, typography, color usage, and layout.
-
----
+They also maintain the design system, a living style guide that keeps components, typography, colour and layout consistent.
 
 ### Architect
 
-The **Software Architect** defines and maintains the technical structure.
+The software architect defines and maintains the technical structure.
 
-#### 🧱 Application Overview
+That means an application overview: a coherent picture of how components interact. A React frontend talking to a Node.js API, talking to microservices, talking to PostgreSQL and Redis.
 
-Creates a coherent big picture of how components interact.
+It means planning for performance: scalability, caching, load balancing, and setting performance budgets with monitoring in place to measure against them.
 
-> E.g., a React frontend ↔ Node.js API ↔ microservices backend ↔ PostgreSQL database ↔ Redis cache.
-
-#### ⚙️ Performance
-
-Plans for scalability, caching, and load balancing.
-Sets **performance budgets** and ensures monitoring tools exist to measure them.
-
-#### 🔌 Middleware
-
-Designs how services communicate and integrate.
-
-> For example, RabbitMQ for asynchronous messaging or Kong for API management.
-
----
+And it means middleware: how services communicate and integrate. RabbitMQ for asynchronous messaging, Kong for API management.
 
 ### Documentation
 
-The **Documentation Specialist** ensures that all knowledge — technical, operational, or user-facing — is captured and maintained.
+The documentation specialist makes sure knowledge gets captured and maintained, whether technical, operational or user-facing. That covers user guides and tutorials, API and architecture documentation, deployment and troubleshooting procedures, and contribution guidelines.
 
-They create and oversee:
+If the API docs exist but have no examples, this is the person who works with developers to add real-world use cases for each endpoint.
 
-* **User guides & tutorials**
-* **API and architecture documentation**
-* **Deployment & troubleshooting procedures**
-* **Contribution guidelines**
+### Domain specialists
 
-> Example: If the team’s API docs exist but lack examples, the documentation specialist might collaborate with developers to add real-world use cases for each endpoint.
+These are the people who bring deep contextual understanding of the target industry.
 
----
+In healthcare, they make sure scheduling logic reflects how clinics actually run, with 15-minute checkups and 60-minute consultations. In finance, they make sure the regulatory compliance and accounting logic are right.
 
-### Domain-Specific Specialists
-
-These experts bring *deep contextual understanding* of the project’s target industry or discipline.
-
-> Example:
-> In healthcare, specialists ensure the scheduling logic reflects real clinic workflows (e.g., 15-minute checkups vs. 60-minute consultations).
-> In finance, they ensure regulatory compliance and correct accounting logic.
-
-They validate the system’s real-world fitness — not just its technical correctness.
-
----
+They validate that the system fits the real world, not just that it's technically correct.
 
 ## Choosing People
 
-In reality, you often **don’t get to pick your team**.
-You work with the people you have — and your task is to **organize and empower them effectively**.
+In practice you often don't get to pick your team. You work with who you have, and your job is to organize and empower them.
 
-When you *do* have a say in team composition:
+When you do have a say, look for gaps in skill, temperament or experience. Introduce new members strategically, balancing short-term disruption against long-term gain. And evaluate both technical and interpersonal fit.
 
-* Identify **gaps** in skill, temperament, or experience.
-* Introduce **new members** strategically, balancing short-term disruption against long-term gains.
-* Evaluate both **technical** and **interpersonal** fit.
+Things worth assessing: problem-solving style, communication clarity, comfort with ambiguity, reaction to feedback, conflict management, and the balance between initiative and collaboration.
 
-### What to Assess
-
-When evaluating potential team members, consider:
-
-* Problem-solving style
-* Communication clarity
-* Comfort with ambiguity
-* Reaction to feedback
-* Conflict management
-* Initiative and collaboration balance
-
-Different evaluation tools uncover different insights:
+Different evaluation methods surface different things.
 
 | Evaluation Type           | Reveals                                 |
 | ------------------------- | --------------------------------------- |
-| **Technical interviews**  | Problem-solving & domain knowledge      |
-| **Behavioral interviews** | Values, teamwork, and conflict handling |
-| **Work samples / trials** | Actual performance in context           |
-| **Reference checks**      | Strengths, weaknesses, and reputation   |
-
----
+| Technical interviews      | Problem-solving & domain knowledge      |
+| Behavioral interviews     | Values, teamwork, and conflict handling |
+| Work samples / trials     | Actual performance in context           |
+| Reference checks          | Strengths, weaknesses, and reputation   |
 
 ## Management for Success
 
-Ultimately, software projects succeed when **motivated people work toward a shared goal.**
-Modern software is too complex for individuals to build alone — coordination and shared understanding are essential.
+Software projects succeed when motivated people work toward a shared goal. Modern software is too complex for individuals to build alone, so coordination and shared understanding aren't optional.
 
-### 1. Encourage Communication
+**Encourage communication.** Information flow is what collaboration runs on. Pick patterns that fit the team: daily stand-ups for tight synchronization, async updates in chat for distributed teams, retrospectives for reflection. Then balance information availability against focus time, because both matter.
 
-Information flow is the lifeblood of collaboration.
-Choose communication patterns that fit your team:
+**Remove obstacles.** A good manager shields the team from politics, ensures access to tools and resources, resolves conflicts early, and enables productivity rather than dictating it. This is servant leadership[1] in practice.
 
-* Daily stand-ups for tight synchronization
-* Async updates in chat for distributed teams
-* Retrospectives to reflect and realign
+**Create psychological safety.** Teams do well when people can admit mistakes early, ask "dumb" questions, challenge decisions constructively, and propose unconventional ideas. Fear suppresses communication; safety enables innovation[2].
 
-Balance **information availability** with **focus time.**
+**Recognize and grow people.** Beyond pay, people need recognition so their work feels like it matters, constructive feedback that's clear and actionable, opportunities to learn and advance, and an understanding of how their work fits the whole. Motivation grows where meaning is visible.
 
----
-
-### 2. Remove Obstacles
-
-A good manager:
-
-* Shields the team from politics
-* Ensures access to tools and resources
-* Resolves conflicts early
-* Enables productivity rather than dictates it
-
-This is **servant leadership**[1] in action.
-
----
-
-### 3. Create Psychological Safety
-
-Teams thrive when people can:
-
-* Admit mistakes early
-* Ask “dumb” questions safely
-* Challenge decisions constructively
-* Propose unconventional ideas
-
-Fear suppresses communication; safety enables innovation[2].
-
----
-
-### 4. Recognize and Grow People
-
-Beyond pay, people need:
-
-* **Recognition** — feeling their work matters
-* **Constructive feedback** — clear, actionable improvement
-* **Growth** — opportunities to learn and advance
-* **Purpose** — understanding how their work impacts the whole
-
-Motivation grows where meaning is visible.
-
----
-
-### 5. Stay Adaptive
-
-No plan survives contact with reality.
-Requirements evolve, contexts change, people come and go.
-Successful managers **adjust course** rather than resist change.
-
-The goal isn't to eliminate uncertainty — it's to **navigate it gracefully.**
+**Stay adaptive.** No plan survives contact with reality. Requirements evolve, contexts change, people come and go. The goal isn't eliminating uncertainty, it's navigating it without falling apart.
 
 ---
 

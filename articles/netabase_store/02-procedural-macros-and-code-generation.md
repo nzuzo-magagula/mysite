@@ -1,7 +1,7 @@
 #####
 date = "2025-11-20"
 author = "Nzuzo Magagula"
-summary = "Deep dive into procedural macros and code generation - how to parse Rust syntax trees and generate type-safe database code at compile time"
+summary = "Parsing Rust syntax trees and generating type-safe database code at compile time, and how the macro crate got restructured three times to get there"
 thumbnail = "https://i.postimg.cc/d1ZSWs9W/54a1b049-09d1-4d4b-82fd-2c620fbccc0c.jpg"
 category = "Technical"
 show_references = true
@@ -36,51 +36,29 @@ title = "Abstract Syntax Tree (AST)"
 url = "https://en.wikipedia.org/wiki/Abstract_syntax_tree"
 description = "Understanding syntax trees in compiler design"
 #####
-# Part 2 — The Complete Macro System
+# The Macro System
 
-### *Understanding the Derive Macros, AST Visitors, and Model Compilation Pipeline*
+This article covers the two macros that power netabase_store: the derive macro (`#[derive(NetabaseModel)]`) and the attribute macro (`#[netabase_definition_module(Definition, DefinitionKeys)]`). Between them they traverse the [Rust syntax tree][1], build model metadata, and emit the structures and traits the runtime uses.
 
-This section explains the two core macros that power Netabase: the **derive macros** (`#[derive(NetabaseModel)]`) and the **attribute macro** (`netabase_definition_module(Definition, DefinitionKeys`). You will learn how they traverse the [Rust syntax tree][1], build model metadata, and finally emit the compiled structures and traits used by the runtime.
+One distinction runs through all of this. Meta-logic is code that runs at compile time inside the macro. Runtime logic is the code the macro generates, which your application then uses. That difference is subtle and confusing at first, so I'll flag it whenever it matters.
 
-Throughout this explanation, you’ll see that meta-logic (code that runs at *compile time* inside the macro) is fundamentally different from runtime logic (code that the macro *generates*, which your application uses at runtime). This distinction is subtle and confusing at first, so we will explicitly highlight it whenever it matters.
+## Overview
 
----
+The macros form a two-stage compilation system for your data model.
 
-## **1. Overview of the Macro System**
+The [derive macros][2] operate on a single struct. They parse the input [AST][1], visit each struct, field and attribute, extract the model metadata (keys, fields, discriminants), and generate strongly typed Rust code from it: newtypes, [traits][3] and impls.
 
-The macros form a two-stage compilation system for your data model:
+The attribute macro acts as a linker. It takes the models already defined and compiles them into a single database definition module, generating discriminants, static descriptors and the public database API.
 
-1.  **The Derive Macros (`#[derive(Model)]`, etc.):** These are [procedural macros][2] that operate on a single struct. They perform four major tasks:
-    *   Parse the input [AST][1].
-    *   Visit each struct, field, and attribute.
-    *   Extract model metadata (keys, fields, discriminants, etc.).
-    *   Generate strongly typed Rust code (newtypes, [traits][3], impls) from that metadata.
+Conceptually it's a mini-compiler for your data model layer. The macros don't just automate small tasks; they generate an entire set of typed structures and database-level identifiers.
 
-2.  **The Attribute Macro (`netabase_definition_module(Definition, DefinitionKeys)`):** This macro acts as a linker. It takes a list of already-defined models and compiles them into a single, cohesive database definition module, generating discriminants, static descriptors, and the public database API.
+## Macro Crate Structure
 
-Conceptually, this is similar to writing a mini-compiler for your data model layer. The macros do not merely automate small tasks—they generate an entire ecosystem of strongly typed structures and database-level identifiers.
+Macros are powerful because they're flexible, and that flexibility makes them hard to manage. When I started I couldn't find much in the way of established structure or common practice for a macro library that needed to do what I wanted. Honestly I wasn't sure what exactly I wanted from my macros either, and this ended up being my favourite trial-and-error process of the whole project.
 
-This is the first area where distinguishing **meta-logic** vs **runtime logic** becomes essential:
+### One giant function
 
-*   **Meta-logic:** The macro parses your code, builds metadata, and generates new Rust code.
-*   **Runtime logic:** What your program actually *does* with all that generated code.
-
-Keeping those layers distinct makes the system intuitive once understood.
-
-Of course! This is a fantastic piece of technical writing. Let's complete the "Macro crate structure" section by chronicling the evolution from a monolithic function to the separated Visitor/Generator architecture, using the code from your `lib.rs` as the final result of this journey.
-
-Here's the new, expanded section:
-
----
-
-## **Macro Crate Structure: An Evolution from Chaos to Clarity**
-
-Macros are super powerful because they are super flexible. When you decide to use macros for code generation, there is so much that is possible, it actually becomes difficult to manage.
-When I got started, I could not find many defined structures and common practices for a macro library that needed to do what I needed my macros to do. Quite frankly, I was not sure *what exactly* I wanted from my macros and this experience was my favorite trial and error process.
-
-### **1. The Monolithic Function: When Everything Lives Together**
-
-I started by trying to define macros and their functionality in one single function, which quickly became a headache:
+I started by defining the macro and all its functionality in a single function, which became a headache almost immediately:
 
 ```rust
 // First attempt: Everything in one giant function
@@ -131,13 +109,13 @@ pub fn netabase_model_derive(input: TokenStream) -> TokenStream {
 }
 ```
 
-You can see how much of a pain it would be to update the derive macro for every single feature I wanted added. The problem was pretty obvious: it is difficult to see what is not working when everything is in the same function. DUH!
-That is like the first rule of good design. The problems were immediate. See, I could not really tell what an error in the expansion meant because it is all evaluated as a clump. Error messages from the compiler just noted that the macro was the problem, but i could not see what was wrong until i walked through the logic piece by piece.
-This is especially annoying because if your macros are wrong enough, the code wont even expand at all!
+You can see how painful updating this would be for every feature I wanted to add. The problem was the obvious one: when everything is in the same function, you can't see what isn't working. Which is more or less the first rule of good design.
 
-### **2. The Helper Function Breakout: Separating Concerns**
+The practical consequence was error messages. The compiler would tell me the macro was the problem, and I'd have to walk through the logic piece by piece to find out what was actually wrong. That's especially annoying because if your macros are wrong enough, the code doesn't expand at all.
 
-My first improvement was to extract helper functions for different generation tasks. This made the code more readable but didn't solve the fundamental problem:
+### Breaking out helpers
+
+My first improvement was extracting helper functions for different generation tasks. That made the code more readable without solving the underlying problem:
 
 ```rust
 fn generate_primary_key(struct_name: &Ident, field: &Field) -> TokenStream2 {
@@ -191,11 +169,11 @@ pub fn netabase_model_derive(input: TokenStream) -> TokenStream {
 }
 ```
 
-This was better, but I still couldn't easily test individual components or get good error messages. When something went wrong, I had to guess which helper function was causing the issue.
+Better, but I still couldn't test individual components or get useful error messages. When something broke I was guessing which helper caused it.
 
-### **3. Adding Error Messages: Finding the Problematic Behavior**
+### Real error messages
 
-The real breakthrough came when I started adding meaningful error messages. Instead of panicking with "Multiple primary keys found", I needed to tell users exactly what went wrong and where:
+Things improved when I started emitting meaningful errors. Instead of panicking with "Multiple primary keys found," I needed to tell the user what went wrong and where:
 
 ```rust
 fn validate_model(input: &DeriveInput) -> Result<(), syn::Error> {
@@ -237,11 +215,11 @@ fn validate_model(input: &DeriveInput) -> Result<(), syn::Error> {
 }
 ```
 
-This approach was much better—users got clear error messages—but the code was still hard to maintain. The validation logic was scattered across multiple functions, and adding new features meant touching every part of the codebase.
+Users got clear errors, but the code was still hard to maintain. Validation logic was scattered across several functions, and adding a feature meant touching most of them.
 
-### **4. The Visitor/Generator Separation: The Final Architecture**
+### Separating visitors from generators
 
-The final breakthrough came when I realized I needed to separate the **parsing/visiting** logic from the **code generation** logic completely. This led to the current architecture:
+What finally worked was separating the parsing and visiting logic from the code generation logic entirely:
 
 ```rust
 // Clean separation in the main derive function
@@ -271,14 +249,9 @@ pub fn netabase_model_derive(input: TokenStream) -> TokenStream {
 }
 ```
 
-This architecture provides several key benefits:
+That bought me four things. I can test `ModelVisitor` on its own to confirm it extracts the right metadata. The generation logic is organized by concern: keys, traits, borrow impls. When something breaks I know which component to check. And adding a feature means extending the visitor or adding a generator, not rewriting everything.
 
-1. **Testability**: I can test the `ModelVisitor` independently to ensure it extracts the right metadata
-2. **Maintainability**: The generation logic is organized by concern (keys, traits, borrow impls, etc.)
-3. **Error Isolation**: When something goes wrong, I know exactly which component to check
-4. **Extensibility**: Adding new features means either extending the visitor or adding a new generator
-
-The same pattern applies to the `netabase_definition_module` macro:
+The same pattern applies to `netabase_definition_module`:
 
 ```rust
 #[proc_macro_attribute]
@@ -298,21 +271,16 @@ pub fn netabase_definition_module(name: TokenStream, input: TokenStream) -> Toke
 }
 ```
 
-This separation of concerns is what makes the macro system maintainable. The visitors are responsible for understanding the structure of the code, while the generators are responsible for emitting new code based on that understanding. Each can evolve independently, and issues can be pinpointed quickly.
+Visitors understand the structure of the code, generators emit new code based on that understanding. Each evolves independently, and problems can be pinpointed.
 
----
+## Stage 1: The Derive Macros
 
-## **2. Stage 1: The Derive Macros and the Visitor Pattern**
+### How `syn` lets you climb the AST
 
-### **A little bit about Syn**
+The [`syn`][5] crate is the foundation of procedural macros in Rust. It parses, traverses and makes sense of Rust code at compile time.
 
-#### **How [`syn`][5] Enables AST Climbing: The Macro Author's Toolkit**
+An [AST][1] is a tree representation of your code's structure. When you write:
 
-The [`syn`][5] crate is the foundation that makes [procedural macros][2] possible in Rust. It provides the tools to parse, traverse, and understand Rust code at compile time. Think of [`syn`][5] as giving you a detailed map and climbing gear for navigating Rust's [Abstract Syntax Tree][1] ([AST][1]).
-
-### **What is an Abstract Syntax Tree?**
-
-An AST is a tree representation of your code's structure. When you write:
 ```rust
 #[derive(NetabaseModel)]
 pub struct User {
@@ -323,7 +291,8 @@ pub struct User {
 }
 ```
 
-The Rust compiler first parses this into an AST that might look conceptually like:
+the compiler parses it into something conceptually like:
+
 ```
 DeriveInput
 ├── attributes: ["NetabaseModel"]
@@ -343,9 +312,7 @@ DeriveInput
             └── ty: "String"
 ```
 
-##### **How `syn` Parses TokenStream into AST**
-
-When a procedural macro runs, it receives a `TokenStream` - a flat sequence of tokens without structural understanding. `syn` transforms this into a structured AST:
+A procedural macro receives a `TokenStream`, which is a flat sequence of tokens with no structure. `syn` turns that into something you can work with:
 
 ```rust
 // TokenStream (flat, hard to work with):
@@ -356,9 +323,9 @@ let input = parse_macro_input!(input as DeriveInput);
 // Now we have a structured object with fields, attributes, etc.
 ```
 
-##### **The [Visitor Pattern][6]: Your AST Climbing Gear**
+### The visitor pattern
 
-The [`syn::visit::Visit`][7] [trait][3] is what enables the "census worker" pattern described earlier. It provides methods for every type of node in the [AST][1], allowing you to climb through the tree systematically:
+The [`syn::visit::Visit`][7] trait provides methods for every node type in the AST, so you can walk the tree systematically:
 
 ```rust
 impl<'a> Visit<'a> for ModelVisitor<'a> {
@@ -384,11 +351,8 @@ impl<'a> Visit<'a> for ModelVisitor<'a> {
 }
 ```
 
-##### **Manual AST Navigation vs. [Visitor Pattern][6]**
+`syn` gives you two ways to do this. You can navigate manually, accessing exactly what you need:
 
-[`syn`][5] gives you two ways to climb the [AST][1]:
-
-**1. Manual Navigation (Direct Access):**
 ```rust
 fn visit_derive_input(&mut self, i: &'a DeriveInput) {
     // Directly access what we need
@@ -403,7 +367,8 @@ fn visit_derive_input(&mut self, i: &'a DeriveInput) {
 }
 ```
 
-**2. Automatic Traversal (Visitor Pattern):**
+Or you can let the [visitor pattern][6] traverse for you:
+
 ```rust
 fn visit_field(&mut self, field: &'a Field) {
     // This gets called automatically for every field
@@ -411,128 +376,71 @@ fn visit_field(&mut self, field: &'a Field) {
 }
 ```
 
-In Netabase, we use a hybrid approach: we implement [`Visit`][7] but override specific methods to collect exactly what we need, then use manual navigation within those methods for precise extraction.
+netabase_store uses a hybrid: implement `Visit`, override the specific methods that matter, and navigate manually inside those for precise extraction.
 
-#### **Real-World AST Climbing in Netabase**
+Walking through what happens with our example, the raw tokens become a `DeriveInput`, `visit_derive_input` gets called with the complete struct, and we extract the struct name `User`, the definition `BlogDefinition` from the `#[netabase]` attribute, and each field with its attributes. For each field we check for `#[primary_key]` and `#[secondary_key]`, then examine the field types (`u64`, `String`) to generate the right newtypes.
 
-Let's trace through what happens when `syn` processes our example:
+The whole pipeline looks like this:
 
-```rust
-#[derive(NetabaseModel)]
-#[netabase(BlogDefinition)] 
-pub struct User {
-    #[primary_key]
-    pub id: u64,
-    #[secondary_key]
-    pub email: String,
-}
-```
-
-1. **[TokenStream][8] → DeriveInput**: [`syn`][5] parses the raw tokens into a structured `DeriveInput`
-2. **[Visitor][6] Entry**: Our `visit_derive_input` method is called with the complete struct
-3. **Metadata Extraction**: We manually extract:
-   - Struct name: `User`
-   - Definition: `BlogDefinition` (from `#[netabase]` attribute)
-   - Fields: We examine each field and its attributes
-4. **Key Discovery**: For each field, we check attributes to identify `#[primary_key]` and `#[secondary_key]`
-5. **Type Analysis**: We examine field types (`u64`, `String`) to generate appropriate newtypes
-
-### **Why This Matters for Macro Authors**
-
-Understanding `syn` and AST traversal is crucial because:
-
-- **Precise Targeting**: You only generate code for the specific structures you care about
-- **Context Awareness**: You understand the relationships between attributes, fields, and types
-- **Error Prevention**: You can validate that the input makes sense before generating code
-- **Flexibility**: You can support complex Rust features like [generics][9], [lifetimes][10], and complex types
-
-### **The Compilation Pipeline with `syn`**
-
-The complete flow looks like:
 ```
 Rust Source Code
-    → [TokenStream][8] (raw tokens)
-    → [syn][5]::DeriveInput (structured [AST][1])
+    → TokenStream (raw tokens)
+    → syn::DeriveInput (structured AST)
     → ModelVisitor (extract metadata)
-    → Code Generators (emit new code using [quote][11])
-    → [TokenStream][8] (generated code)
+    → Code Generators (emit new code using quote)
+    → TokenStream (generated code)
     → Expanded Rust Code
 ```
 
-This pipeline is what enables Netabase to understand your data model at compile time and generate the appropriate type-safe database code. Without [`syn`][5]'s robust parsing and visitation capabilities, we'd be stuck trying to make sense of raw token streams - a much more error-prone and limited approach.
+Understanding this matters because it's what lets you target only the structures you care about, understand the relationships between attributes, fields and types, validate input before generating anything, and support the more complex parts of Rust like [generics][9] and [lifetimes][10].
 
-The [Visitor pattern][6], combined with [`syn`][5]'s comprehensive [AST][1] types, provides the solid foundation that makes complex macro systems like Netabase possible. It's the difference between trying to understand a book by looking at individual letters versus reading complete sentences and paragraphs.
-### **The Visitor as a Census Worker**
+### The visitor itself
 
-Inside the derive macro, we use a custom **Visitor** to walk through the syntax tree. The easiest way to understand this is to imagine a **census worker** traveling through a neighborhood:
-
-*   The **neighborhood** is your entire syntax tree.
-*   Each **house** is a node (a struct, field, attribute, etc.).
-*   The **census worker** is our Visitor struct.
-*   The **paperwork** the census worker fills in is the metadata we collect (primary key, secondary key, field attributes, etc.).
-
-The census worker visits every house, examines what’s inside, records facts, never *alters* anything, and hands the collected data to the “city database compiler” (the code generator). This analogy cleanly captures why the Visitor pattern is a perfect fit: it performs a structured, predictable walk over the tree, gathering the metadata needed to generate code.
-
+The easiest way I found to think about the visitor is as a census worker. The neighbourhood is the syntax tree, each house is a node, and the paperwork the census worker fills in is the metadata: primary key, secondary keys, field attributes. The worker visits every house, records facts, alters nothing, and hands the collected data to the code generator.
 
 ```rust
-use [syn][5]::{Ident, Path, Token, punctuated::Punctuated, visit::Visit};
+use syn::{Ident, Path, Token, punctuated::Punctuated, visit::Visit};
 
 use crate::{
     item_info::netabase_model::{ModelKeyInfo, ModelLinkInfo},
     util::extract_fields,
 };
 
-// THE CENSUS WORKER'S PAPERWORK: This struct holds all the metadata collected
-// during the [AST][1] traversal. Each field represents a different type of information
-// that our "census worker" (the [visitor pattern][6]) gathers from the syntax tree neighborhood.
+// Holds all the metadata collected during AST traversal.
 #[derive(Default)]
 pub struct ModelVisitor<'ast> {
-    pub name: Option<&'ast Ident>,           // The "house address" - which struct we're visiting
-    pub key: Option<ModelKeyInfo<'ast>>,     // Primary and secondary key information found
+    pub name: Option<&'ast Ident>,           // Which struct we're visiting
+    pub key: Option<ModelKeyInfo<'ast>>,     // Primary and secondary key information
     pub links: Vec<ModelLinkInfo<'ast>>,     // Foreign key relationships (future links)
     pub definitions: Vec<Path>,              // Which database definition this model belongs to
     // Generics support removed - not yet implemented
-    // pub generics: Option<&'ast Generics>, // Future: support for generic models
+    // pub generics: Option<&'ast Generics>,
 }
 
-// THE CENSUS WORKER'S ROUTE: This implementation defines exactly what our visitor
-// does when it encounters different nodes in the syntax tree neighborhood.
 impl<'a> Visit<'a> for ModelVisitor<'a> {
-    // MAIN HOUSE VISIT: This is called when we visit a struct definition (the main "house")
     fn visit_derive_input(&mut self, i: &'a syn::DeriveInput) {
-        // RECORD THE ADDRESS: Note which struct we're examining
         self.name = Some(&i.ident);
         
         // Generics support removed - not yet implemented
         // self.generics = Some(&i.generics);
         
-        // EXAMINE THE RESIDENTS: Look at all fields in the struct and identify keys
-        // This is like checking who lives in the house and their roles (primary/secondary keys)
+        // Identify the primary and secondary keys among the fields
         self.key = match ModelKeyInfo::find_keys(extract_fields(i)) {
             Ok(k) => Some(k),
             Err(e) => panic!("Error parsing Model: {e}"),
         };
         
-        // CHECK HOUSE AFFILIATIONS: Find which database definition this model belongs to
-        // This is like noting which neighborhood district the house is part of
         self.definitions = Self::find_definitions(i);
-        
-        // MAP CONNECTIONS TO OTHER HOUSES: Find foreign key relationships
-        // This is like noting which other houses this one is connected to
         self.links = ModelLinkInfo::find_link(extract_fields(i)).collect();
     }
 }
 
-// THE CENSUS WORKER'S SPECIALIZED TOOLS: Helper methods that assist in the visitation process
 impl<'a> ModelVisitor<'a> {
-    // SPECIALIZED DATA COLLECTION: This method specifically looks for the `#[netabase]` 
-    // attribute to determine which database definition the model belongs to.
-    // Think of this as checking the house's official registration documents.
+    // Look for the `#[netabase]` attribute to determine which database
+    // definition the model belongs to.
     pub fn find_definitions(input: &'a syn::DeriveInput) -> Vec<syn::Path> {
-        // LOOK FOR THE OFFICIAL STAMP: Find the #[netabase(...)] attribute
         let attr = input.attrs.iter().find(|a| a.path().is_ident("netabase"));
         
-        // READ THE REGISTRATION DETAILS: Parse what's inside the attribute
         if let Some(att) = attr
             && let Ok(list) = att.meta.require_list()
         {
@@ -540,61 +448,38 @@ impl<'a> ModelVisitor<'a> {
                 .parse_args_with(Punctuated::<syn::Path, Token![,]>::parse_terminated)
                 .map_err(|e| e.into_compile_error())
             {
-                Ok(r) => r.into_iter().collect(),  // Successfully read the definition names
-                Err(_) => vec![],                  // Couldn't parse, return empty
+                Ok(r) => r.into_iter().collect(),
+                Err(_) => vec![],
             }
         } else {
-            vec![]  // No netabase attribute found
+            vec![]
         }
     }
 }
 ```
 
----
+## Validating Model Metadata
 
-## **3. Extracting and Validating Model Metadata**
+Once the visitor has walked the AST we have a `ModelMeta` containing the model's name, fields, primary key, secondary keys and other attributes. A few assertions happen here, in the meta-logic layer.
 
-Once the Visitor has walked the AST, we end up with a `ModelMeta` structure containing the model's name, fields, primary key, secondary keys, and other attributes.
+**Exactly one primary key must exist.** It uniquely identifies entities, defines the storage layout, and determines which newtype gets generated. Zero or multiple primary keys would break the contract the backends rely on.
 
-Several **basic assertions** occur here in the **meta-logic layer**:
+**All secondary keys must be newtypes.** They can't reuse primitives like `String` or `u32`, because they participate in the model's `SecondaryKey` enum and backends have to be able to tell them apart by type.
 
-### **Assertion A: Exactly one primary key must exist**
-A model must declare exactly one primary key because it uniquely identifies entities, defines the storage layout, and determines which newtype must be generated. Allowing zero or multiple primary keys would break the contract that backends rely on.
+**Discriminants are required.** Each model needs a unique discriminant so the backend can tag rows by model type, separate index namespaces, and avoid table collisions. The definition macro generates the `ModelDiscriminant` enum from these.
 
-### **Assertion B: All secondary keys must be newtypes**
-Secondary keys cannot reuse primitive types like `String` or `u32`. They must be newtypes because they participate in the model’s `SecondaryKey` enum, and backends must be able to differentiate them by type for safety.
+**Generated conversion traits must be valid.** The `TryFrom<Enum>` implementations are what allow safe extraction of typed keys from the model key enums, which prevents type-mixing mistakes in a strongly typed backend.
 
-### **Assertion C: Discriminants are required**
-Each model needs a unique discriminant so the backend can tag rows by model type, separate index namespaces, and prevent table collisions. The `DatabaseDefinition` macro will later generate the `ModelDiscriminant` enum using these.
+Once that's validated, the derive macro generates the code: newtypes for primary and secondary keys, implementations of `Borrow`, `From`, `TryFrom` and `AsRef`, the model's key enums and `Descriptor` struct, and the backend-facing traits and helper methods for constructing keys. That generated code is the runtime logic your program and the backends actually use.
 
-### **Assertion D: Generated conversion traits must be valid**
-`TryFrom<Enum>` implementations allow for ergonomic and safe extraction of typed keys from the model key enums, preventing fatal type-mixing mistakes in a strongly typed backend.
+## Stage 2: The Definition Module Macro
 
----
+Where the derive macros work per-model, `#[netabase_definition_module]` transforms a module containing multiple model definitions into a single database schema.
 
-## **4. Generating Strongly Typed Code from a Model**
+Derive macros go from struct to metadata to expansions. This one handles database-wide model registration, discriminant generation, wrapper enums for type-safe queries, and the public database API surface. It's what turns a module of structs into a complete typed schema.
 
-Once all metadata is validated, the derive macro generates the code. The output includes:
-*   Newtypes for primary and secondary keys.
-*   Implementations of `Borrow`, `From`, `TryFrom`, and `AsRef`.
-*   The model’s key enums and `Descriptor` struct.
-*   Backend-facing traits and helper methods for constructing keys.
+The input is a module of annotated models:
 
-This generated code is the “runtime logic” that your program and the backends will use.
-
----
-
-## **5. Stage 2: The `#[netabase_definition_module]` Attribute Macro**
-
-### *The Compile-Time Database Schema Compiler*
-
-While the derive macros operate at the **per-model** level, the `#[netabase_definition_module]` macro performs a different and equally critical role: **It transforms a module containing multiple model definitions into a single, cohesive database schema.**
-
-Where derive macros are concerned with *struct → metadata → expansions*, this attribute macro handles database-wide model registration, discriminant generation, wrapper enums for type-safe queries, and the construction of the public database API surface. This is the macro that turns *a module of structs* into *a complete type-safe database schema*.
-
-### **What This Macro Consumes and Generates**
-
-The input is a **module containing models** annotated with the attribute:
 ```rust
 #[netabase_definition_module(BlogDefinition, BlogKeys)]
 pub mod blog {
@@ -623,41 +508,20 @@ pub mod blog {
 }
 ```
 
-The macro inspects the module AST, collects all models marked with `#[netabase(BlogDefinition)]`, and generates:
+The macro inspects the module AST, collects every model marked with `#[netabase(BlogDefinition)]`, and generates a `BlogDefinition` enum wrapping all model types for type-safe storage and retrieval, a `BlogDefinitionDiscriminant` enum (`#[repr(u16)]`) used as database-level namespace identifiers, a `BlogKeys` enum wrapping every possible key type across all models, a `BlogDefinitionTables` struct for Redb's compile-time table name validation, and the `NetabaseDefinitionTrait` implementation providing metadata access and conversions.
 
-*   **`BlogDefinition` enum**: A wrapper enum containing all model types for type-safe storage and retrieval
-*   **`BlogDefinitionDiscriminant` enum**: A `#[repr(u16)]` enum with variants for each model type, used as database-level namespace identifiers
-*   **`BlogKeys` enum**: A wrapper enum containing all possible key types (primary and secondary) across all models
-*   **`BlogDefinitionTables` struct** (Redb only): Static table definitions for compile-time table name validation
-*   **Trait implementations**: Implementation of `NetabaseDefinitionTrait` providing metadata access and conversions
+### Why the discriminant matters
 
-### **The Central Role of the Model Discriminant**
-The macro generates the `BlogDefinitionDiscriminant` as a `#[repr(u16)]` enum where each variant corresponds to a model (e.g., `User`, `Post`). This discriminant acts as a *database-level namespace identifier*. Backends use it to:
-- Separate tables by model type (e.g., "User" tree, "Post" tree)
-- Create isolated secondary index namespaces
-- Encode composite keys for secondary indexes
-- Route typed queries to the correct storage region
+The `BlogDefinitionDiscriminant` is a `#[repr(u16)]` enum with a variant per model. It acts as a database-level namespace identifier, and the backends use it to separate tables by model type, create isolated secondary index namespaces, encode composite keys for secondary indexes, and route typed queries to the right storage region.
 
-This discriminant-based design enables completely generic backend code that can work with any schema defined by users.
+That's what makes the backend code completely generic. It works with any schema a user defines.
 
-### **Assertions Performed by This Macro**
-This macro enforces **compile-time safety guarantees** through:
-*   **Module structure validation**: The module must contain at least one model
-*   **Type coherence checks**: All listed models must implement `NetabaseModelTrait<BlogDefinition>`
-*   **Discriminant generation**: Each model automatically receives a unique discriminant value
-*   **Key type safety**: Keys are correctly scoped to their parent definition through the wrapper enums
+The macro also enforces a few things at compile time: the module must contain at least one model, all listed models must implement `NetabaseModelTrait<BlogDefinition>`, each model receives a unique discriminant, and keys stay scoped to their parent definition through the wrapper enums.
 
----
+## From Input to Generated Code
 
-## **6. From AST to Expanded Code: The Structural Transformation**
+Here's a complete example traced through the system. The input:
 
-Now that we understand how `syn` enables AST traversal, let's see the core structural transformation from user input to generated types. This is where the meta-logic (macro execution) produces the runtime data structures that your application actually uses.
-
-### **The Input → Output Transformation**
-
-Let's trace a complete example through the macro system:
-
-**User Input (9 lines):**
 ```rust
 #[netabase_definition_module(ExampleDefs, ExampleDefKeys)]
 pub mod definitions {
@@ -675,7 +539,8 @@ pub mod definitions {
 }
 ```
 
-**Generated Core Structures (Key Types):**
+The key types that come out:
+
 ```rust
 // PRIMARY KEY NEWTYPE: Generated from #[primary_key] field
 pub struct UserPrimaryKey(pub String);
@@ -695,7 +560,8 @@ pub enum UserKey {
 }
 ```
 
-**Generated Database Schema Structures:**
+And the schema structures:
+
 ```rust
 // DATABASE DEFINITION ENUM: Can hold any model in the schema
 pub enum ExampleDefs {
@@ -720,12 +586,9 @@ pub enum ExampleDefKeysDiscriminant {
 }
 ```
 
-### **The Structural Expansion Pipeline**
+### How each piece gets generated
 
-Let's break down how each structure gets generated:
-
-#### **1. Key Newtype Generation**
-The visitor detects `#[primary_key]` and `#[secondary_key]` attributes and generates corresponding newtypes:
+The visitor detects `#[primary_key]` and `#[secondary_key]` and generates the corresponding newtypes:
 
 ```rust
 // Input field:
@@ -743,10 +606,9 @@ pub email: String,          // Field name: "email", type: String
 pub struct UserEmailSecondaryKey(pub String);  // Name: User + Email + SecondaryKey
 ```
 
-**Why this matters:** These newtypes provide compile-time type safety - you can't accidentally use a `UserPrimaryKey` where a `PostPrimaryKey` is expected, even though both might wrap `String`.
+These newtypes are what give you compile-time safety. You can't accidentally pass a `UserPrimaryKey` where a `PostPrimaryKey` is expected, even though both wrap a `String`.
 
-#### **2. Enum Generation for Unified Access**
-The generator creates enums that unify all keys for ergonomic usage:
+Then the enums unify all keys for ergonomic use:
 
 ```rust
 // Generated from all #[secondary_key] fields
@@ -762,10 +624,9 @@ pub enum UserKey {
 }
 ```
 
-**Why this matters:** These enums allow you to work with any key type through a unified interface while maintaining full type information.
+That lets you work with any key type through one interface while keeping the full type information.
 
-#### **3. Database Schema Assembly**
-The `netabase_definition_module` macro links all models together into a cohesive schema:
+The definition module macro then links the models into a schema:
 
 ```rust
 // Generated definition enum (holds any model in the module)
@@ -783,10 +644,9 @@ pub enum ExampleDefKeys {
 }
 ```
 
-**Why this matters:** This provides the unified interface that backends use to work with entire schemas generically, while maintaining type safety across different models.
+This is the unified interface backends use to work with entire schemas generically while keeping type safety across models.
 
-#### **4. Discriminant Types for Runtime Identification**
-The macro generates companion enums for efficient model identification:
+Finally the discriminants:
 
 ```rust
 // Simple enums used for efficient type tagging
@@ -794,67 +654,31 @@ pub enum ExampleDefsDiscriminant { User }
 pub enum ExampleDefKeysDiscriminant { UserKey }
 ```
 
-**Why this matters:** These discriminants enable backends to efficiently route operations to the correct storage without runtime type checking.
+These let backends route operations to the right storage without runtime type checking.
 
-### **The Visitor → Generator Flow**
+So the flow is: `ModelVisitor` finds `#[primary_key]` on `name: String` and `#[secondary_key]` on `email: String`, records that metadata, the generators create `UserPrimaryKey`, `UserEmailSecondaryKey`, `UserSecondaryKeys` and `UserKey`, and then `DefinitionsVisitor` collects all models and generates `ExampleDefs` and `ExampleDefKeys`.
 
-This structural transformation follows a clear pipeline:
+Nine lines of user input produce eight type definitions that form a complete typed database interface. Each has a specific role, the naming follows consistent patterns (`{Model}PrimaryKey`, `{Model}{Field}SecondaryKey`), and every relationship is enforced by the compiler.
 
-1. **Visitor Examines AST**: The `ModelVisitor` finds `#[primary_key]` on `name: String` and `#[secondary_key]` on `email: String`
-2. **Metadata Extraction**: Visitor records that `User` has primary key `name` (type `String`) and secondary key `email` (type `String`)  
-3. **Generator Creates Types**: 
-   - `UserPrimaryKey` newtype wrapping `String`
-   - `UserEmailSecondaryKey` newtype wrapping `String`
-   - `UserSecondaryKeys` enum with `Email` variant
-   - `UserKey` enum combining primary and secondary
-4. **Schema Assembly**: `DefinitionsVisitor` collects all models and generates the `ExampleDefs` and `ExampleDefKeys` enums
+You aren't limited to types either. You can add trait definitions, extra modules, or anything else the system needs.
 
-### **The Power of Structural Generation**
+## Meta-Logic and Runtime Logic
 
-This expansion demonstrates why macros excel at database layers:
+This project is a good argument for learning to separate meta and runtime thinking, because the two layers never interact directly, only through generated code.
 
-- **9 lines of user input** generate **8 distinct type definitions** that form a complete, type-safe database interface
-- Each generated structure has a specific role in the overall architecture
-- The naming follows consistent patterns (`{Model}PrimaryKey`, `{Model}{Field}SecondaryKey`, etc.)
-- All type relationships are preserved and enforced by the Rust compiler
+Meta-logic runs during compilation. It reads your code or a model list, generates more code, and contains the visitors, attribute parsing, assertions and error messages.
 
-The macro system transforms your simple struct definition into a rich type ecosystem that provides compile-time guarantees for database operations, eliminating whole classes of runtime errors while maintaining excellent performance.
+Runtime logic runs when your application executes. It defines how models behave and how keys get constructed, and it's what lets backends perform queries using descriptors and discriminants.
 
-In addition to just generating type, you can add trait definitions, extra modules or any other code that you might need to create a functional system.
+The mental model I use: meta-logic is the compiler writing Rust for you, runtime logic is your program running it.
 
----
+## The Full Pipeline
 
-## **7. Meta-Logic vs Runtime Logic — The Clear Separation**
+Putting it together, the macro system is a staged compilation pipeline.
 
-This project is a prime example of why you must learn to separate meta and runtime thinking. The two layers never interact directly—only through generated code.
+A visitor walks the AST of a single model annotated with `#[derive(NetabaseModel)]`. Metadata gets extracted and compile-time assertions check correctness. The derive macro emits runtime structures, trait implementations and `Borrow` impls for that model. The `#[netabase_definition_module]` attribute macro then traverses the module, collects all models, and generates the wrapper enums, static table definitions and schema trait implementations. Backends consume the generated schema through the trait APIs, using `Borrow` for zero-copy access and discriminants for namespace separation.
 
-**Meta logic (macros):**
-*   Runs during compilation.
-*   Reads your code (derive) or a model list (declarative).
-*   Generates more code.
-*   Contains visitors, attribute parsing, assertions, and error messages.
-
-**Runtime logic (generated code):**
-*   Runs when your application executes.
-*   Defines how models behave and how keys are constructed.
-*   Enables backends to perform queries using descriptors and discriminants.
-
-A useful mental model is:
-> **Meta-logic is the compiler writing Rust code for you. Runtime logic is your program running that code.**
-
----
-
-## **8. Closing Summary: The Full Compilation Pipeline**
-
-Part 2 has shown that the Netabase macro system forms a complete, staged compilation pipeline:
-
-1.  **[AST][1] Parsing & Visitation:** A **[Visitor][6]** (the "census worker") walks the [AST][1] of a single model annotated with `#[derive(NetabaseModel)]`.
-2.  **Metadata Extraction & Validation:** Model metadata is extracted and compile-time assertions ensure strong correctness guarantees.
-3.  **Per-Model Code Generation:** The derive macro emits runtime structures (key types, [enums][12]), [trait][3] implementations, and [`Borrow`][13] impls for a single model.
-4.  **Database Schema Assembly:** The `#[netabase_definition_module]` attribute macro traverses the module, collects all models, and generates wrapper [enums][12] (`Definition`, `Discriminant`, `Keys`), static table definitions, and the complete schema [trait][3] implementations.
-5.  **Backend Integration:** Backends use the generated schema through the [trait][3] APIs, leveraging [`Borrow`][13] for zero-copy access and discriminants for type-safe namespace separation.
-
-This two-stage system, with its clear separation of meta-logic (compile-time code generation) and runtime logic (the generated code), provides a robust foundation for a type-safe, high-performance database layer. A future migration to [`darling`][14] will further improve the maintainability and clarity of the attribute parsing stage of this pipeline.
+Two stages, with meta-logic and runtime logic kept clearly apart. A future migration to [`darling`][14] should make the attribute parsing stage cleaner still.
 
 ## References
 

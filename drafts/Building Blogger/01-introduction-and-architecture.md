@@ -1,7 +1,7 @@
 #####
 date = "2025-11-20"
 author = "Nzuzo Magagula"
-summary = "Building a modern fullstack blog application with Dioxus - learn how to create a type-safe, performant web app that works on both server and client"
+summary = "The architecture behind this blog: Dioxus server functions, type-safe routing, signal-based state, and one codebase compiling for server and browser"
 thumbnail = "https://i.postimg.cc/pdKhS5Rk/blogger-architecture.png"
 category = "Technical"
 show_references = true
@@ -10,25 +10,16 @@ show_references = true
 name = "Building Blogger"
 next = "Building Blogger/02-markdown-parser-and-rendering"
 #####
-# Building Blogger: A Fullstack Dioxus Blog Application - Part 1
+# Building Blogger: Introduction and Architecture
 
-## Introduction
-
-In this article series, I'll walk you through building a complete blog application using Dioxus - Rust's premier fullstack framework. Unlike typical tutorials that show simplified examples, this series documents the creation of a real, production-ready blogging platform with features like:
-
-- **Fullstack Architecture**: Server-side rendering with client-side hydration
-- **Markdown Support**: Custom parser with TOML metadata and series support
-- **Browser Caching**: IndexedDB integration using netabase_store
-- **File System Watching**: Auto-reload when articles change
-- **GitHub Integration**: Display repositories with API caching
-- **Responsive Design**: Tailwind CSS with theme support
-- **Type Safety**: Fully type-safe from server to client
+This series walks through building a complete blog application in Dioxus. Not a simplified example, the actual production code, which means fullstack architecture with server-side rendering and client hydration, a markdown parser with TOML metadata and series support, IndexedDB caching through netabase_store, file system watching for auto-reload, GitHub repository display with API caching, Tailwind with theme support, and type safety from server to client.
 
 ## Why Dioxus?
 
-Dioxus brings React-like ergonomics to Rust with several key advantages:
+Dioxus brings React-like ergonomics to Rust, and a few things make it worth using here.
 
-### 1. Write Once, Run Anywhere
+### One component, several targets
+
 ```rust
 #[component]
 fn MyComponent(name: String) -> Element {
@@ -38,13 +29,10 @@ fn MyComponent(name: String) -> Element {
 }
 ```
 
-This component works on:
-- **Web**: Compiles to WASM
-- **Desktop**: Uses webview
-- **Mobile**: iOS and Android
-- **Server**: SSR for SEO
+That component runs on the web compiled to WASM, on desktop through a webview, on iOS and Android, and on the server for SSR.
 
-### 2. Fullstack with Server Functions
+### Server functions
+
 ```rust
 #[server]
 async fn fetch_article(path: String) -> Result<Article, ServerError> {
@@ -57,13 +45,10 @@ async fn fetch_article(path: String) -> Result<Article, ServerError> {
 let article = fetch_article("post.md".to_string()).await?;
 ```
 
-The `#[server]` macro generates:
-- Server-side implementation
-- Client-side RPC stub
-- Automatic serialization
-- Type-safe communication
+The `#[server]` macro generates the server-side implementation, the client-side RPC stub, the serialization, and the type-safe glue between them.
 
-### 3. Reactive State Management
+### Signal-based reactivity
+
 ```rust
 let mut count = use_signal(|| 0);
 
@@ -75,15 +60,9 @@ rsx! {
 }
 ```
 
-Signal-based reactivity ensures:
-- Fine-grained updates
-- Minimal re-renders
-- Easy to reason about
-- No complex lifecycle hooks
+Signals give you fine-grained updates, minimal re-renders, and no lifecycle hooks to reason about.
 
 ## Project Architecture
-
-The blogger application is organized into several key modules:
 
 ```
 blogger/
@@ -108,9 +87,7 @@ blogger/
 └── assets/                         # Static assets
 ```
 
-### Module Breakdown
-
-#### 1. Main Entry Point (`main.rs`)
+### The entry point
 
 ```rust
 #[derive(Clone, Routable, Debug, PartialEq)]
@@ -139,15 +116,11 @@ fn main() {
 }
 ```
 
-**Key features:**
-- Type-safe routing with `Routable` derive
-- Catch-all segments for nested paths
-- Conditional compilation for server/client
-- Automatic file watching in development
+Routing is type-safe through the `Routable` derive, catch-all segments handle nested paths, conditional compilation splits server from client, and the file watcher only exists on the server side.
 
-#### 2. Markdown Management (`markdown_management/`)
+### Markdown management
 
-This module handles all content operations:
+This module handles all the content operations:
 
 ```rust
 // Server-side: Read files from disk
@@ -170,7 +143,8 @@ pub async fn fetch_article_with_metadata(
 }
 ```
 
-**Metadata format:**
+The metadata itself is a plain struct:
+
 ```rust
 #[derive(Serialize, Deserialize)]
 pub struct ArticleTomlMetadata {
@@ -185,7 +159,8 @@ pub struct ArticleTomlMetadata {
 }
 ```
 
-Articles use TOML frontmatter:
+Which comes from TOML frontmatter in each article:
+
 ```markdown
 #####
 date = "2025-11-20"
@@ -202,7 +177,7 @@ next = "Building Blogger/02-markdown-parser"
 Content here...
 ```
 
-#### 3. Page Components (`pages/`)
+### Page components
 
 Each page is a Dioxus component:
 
@@ -234,20 +209,16 @@ pub fn ArticlePage(path: String) -> Element {
 }
 ```
 
-**Key patterns:**
-- `use_resource` for async data fetching
-- Pattern matching on `Resource` state
-- Automatic re-fetching on dependencies change
-- Type-safe prop passing
+`use_resource` handles the async fetch, you pattern match on the resource state, it re-fetches automatically when dependencies change, and props are type-checked.
 
-## Key Design Decisions
+## Design Decisions
 
-### 1. Server Functions Over REST APIs
+### Server functions instead of REST
 
-Instead of defining REST endpoints manually:
+The traditional version means defining endpoints and then constructing calls to them:
 
 ```rust
-// ❌ Traditional approach
+// Traditional approach
 #[get("/api/article/<path>")]
 async fn get_article(path: String) -> Json<Article> {
     // Implementation
@@ -258,10 +229,9 @@ let response = fetch("/api/article/post.md").await?;
 let article: Article = response.json().await?;
 ```
 
-We use server functions:
+The Dioxus version collapses that:
 
 ```rust
-// ✅ Dioxus approach
 #[server]
 async fn fetch_article(path: String) -> Result<Article, ServerFnError> {
     // Implementation
@@ -271,15 +241,11 @@ async fn fetch_article(path: String) -> Result<Article, ServerFnError> {
 let article = fetch_article("post.md".to_string()).await?;
 ```
 
-**Benefits:**
-- No URL construction
-- No manual serialization
-- Type-safe RPC
-- Shared code between client and server
+No URL construction, no manual serialization, type-safe RPC, and shared code between the two sides.
 
-### 2. Feature-Gated Code
+### Feature-gated code
 
-The same codebase works on different platforms:
+The same codebase compiles for different platforms:
 
 ```rust
 // Always compiled
@@ -301,14 +267,9 @@ async fn read_from_indexeddb(key: &str) -> Result<String> {
 }
 ```
 
-This enables:
-- Conditional dependencies (no tokio in WASM)
-- Platform-specific optimizations
-- Single codebase for all targets
+Which means conditional dependencies (no tokio in WASM), platform-specific optimizations, and one codebase for every target.
 
-### 3. Signal-Based Reactivity
-
-Instead of useState and useEffect:
+### Signals over useState and useEffect
 
 ```rust
 // Create reactive signal
@@ -329,15 +290,9 @@ use_effect(move || {
 });
 ```
 
-**Advantages:**
-- Automatic dependency tracking
-- No dependency arrays
-- Fine-grained reactivity
-- Copy semantics (cheap clones)
+Dependency tracking is automatic, there are no dependency arrays, reactivity is fine-grained, and signals are `Copy`, so cloning is cheap.
 
-### 4. File System Organization
-
-Articles are organized by series:
+### Articles organized by folder
 
 ```
 articles/
@@ -351,34 +306,13 @@ articles/
     └── summary.md
 ```
 
-The system:
-- Auto-detects series from folder names
-- Parses navigation from TOML metadata
-- Generates series pages automatically
-- Supports multi-level navigation
+Series get detected from folder names, navigation comes from the TOML metadata, series pages generate themselves, and multi-level navigation works out of that.
 
 ## Data Flow
 
-### Server-Side Rendering (SSR)
+An initial request goes browser to server, reads the filesystem, parses the markdown, renders HTML, and returns it. The browser then loads the WASM, hydrates the components, attaches event handlers, and the page becomes interactive. Subsequent navigation happens client-side, calling server functions and updating the UI without a full page load.
 
-1. **Initial Request**:
-   ```
-   Browser → Server → Read filesystem → Parse markdown → Render HTML → Browser
-   ```
-
-2. **Hydration**:
-   ```
-   Browser loads WASM → Hydrate components → Attach event handlers → Interactive
-   ```
-
-3. **Subsequent Navigation**:
-   ```
-   Click link → Client-side routing → Call server function → Update UI
-   ```
-
-### Client-Side Caching
-
-For GitHub data (WASM only):
+GitHub data gets cached in the browser:
 
 ```rust
 #[cfg(feature = "web")]
@@ -400,7 +334,7 @@ pub async fn fetch_github_repos_cached() -> Result<Vec<GitHubRepo>> {
 }
 ```
 
-This uses `netabase_store` for type-safe IndexedDB operations:
+That uses `netabase_store` for typed IndexedDB access:
 
 ```rust
 #[derive(NetabaseModel, bincode::Encode, bincode::Decode)]
@@ -413,11 +347,9 @@ pub struct CachedGitHubData {
 }
 ```
 
-## Performance Considerations
+## Performance
 
-### WASM Bundle Size
-
-The application uses aggressive optimization:
+The WASM bundle needs aggressive optimization to be usable:
 
 ```toml
 [profile.release]
@@ -431,14 +363,9 @@ strip = "debuginfo" # Strip debug info
 level = 'z'         # Maximum compression
 ```
 
-**Results:**
-- Dev build: ~8MB WASM
-- Release build: ~500KB WASM (gzipped)
-- First Contentful Paint: < 2s
+A dev build is around 8MB of WASM. The release build is around 500KB gzipped, with first contentful paint under 2 seconds.
 
-### Lazy Loading
-
-Resources load on-demand:
+Resources load on demand:
 
 ```rust
 // Article only loads when navigated to
@@ -452,9 +379,7 @@ let repos = use_resource(|| async move {
 });
 ```
 
-### File Watching (Development)
-
-In development, articles auto-reload:
+And in development, articles reload without restarting the server:
 
 ```rust
 #[cfg(feature = "server")]
@@ -478,75 +403,35 @@ pub fn start_article_watcher() -> Result<()> {
 }
 ```
 
-This enables hot-reloading of content without restarting the server.
+## What's Coming
 
-## What We'll Build
+Part 2 covers the markdown parser: custom extensions, TOML frontmatter parsing, syntax highlighting, math rendering, and component integration.
 
-Over the next four articles, we'll explore:
+Part 3 covers article management and caching: file system organization, metadata extraction, series detection, IndexedDB, and the GitHub API.
 
-### Part 2: Markdown Parser and Rendering
-- Custom markdown extensions
-- TOML frontmatter parsing
-- Syntax highlighting
-- Math rendering
-- Component integration
+Part 4 covers routing and page components: type-safe routing, dynamic segments, nested routes, navigation, and loading states.
 
-### Part 3: Article Management and Caching
-- File system organization
-- Metadata extraction
-- Series detection
-- IndexedDB caching
-- GitHub API integration
+Part 5 covers fullstack architecture and optimization: server function patterns, the SSR versus CSR trade-off, bundle size, caching strategies, and deployment.
 
-### Part 4: Routing and Page Components
-- Type-safe routing
-- Dynamic segments
-- Nested routes
-- Navigation components
-- Loading states
+## Following Along
 
-### Part 5: Fullstack Architecture and Optimization
-- Server function patterns
-- SSR vs CSR trade-offs
-- Bundle size optimization
-- Caching strategies
-- Production deployment
+You'll need Rust 1.75 or later, Node and npm for Tailwind, and the Dioxus CLI:
 
-## Getting Started
-
-To follow along, you'll need:
-
-**Prerequisites:**
-- Rust 1.75+ (for async traits)
-- Node.js and npm (for Tailwind)
-- Dioxus CLI: `cargo install dioxus-cli`
-
-**Create a new project:**
 ```bash
+cargo install dioxus-cli
 dx new my-blog --template=fullstack
 cd my-blog
 dx serve
 ```
 
-Visit http://localhost:8080 to see your app!
+That gets you a running app on http://localhost:8080.
 
-## Conclusion
-
-Dioxus enables building modern web applications in Rust with:
-- Fullstack capabilities in one language
-- Type safety from server to client
-- React-like component model
-- Excellent performance
-
-In the next article, we'll dive into the markdown rendering system - how to parse TOML metadata, integrate syntax highlighting, and create a flexible rendering pipeline.
+Next article: the markdown rendering system, and how TOML metadata, syntax highlighting and the rendering pipeline fit together.
 
 ---
 
-**Project Repository**: [github.com/nzuzo-newsnet/blogger](https://github.com/nzuzo-newsnet/blogger)
+Project repository: [github.com/nzuzo-newsnet/blogger](https://github.com/nzuzo-newsnet/blogger)
 
-**Dioxus Documentation**: [dioxuslabs.com](https://dioxuslabs.com)
+Dioxus documentation: [dioxuslabs.com](https://dioxuslabs.com)
 
-**Further Reading:**
-- [Dioxus Book](https://dioxuslabs.com/learn/0.7/)
-- [Server Functions Guide](https://dioxuslabs.com/learn/0.7/reference/server_functions)
-- [Fullstack Apps](https://dioxuslabs.com/learn/0.7/cookbook/fullstack)
+Further reading: the [Dioxus Book](https://dioxuslabs.com/learn/0.7/), the [server functions guide](https://dioxuslabs.com/learn/0.7/reference/server_functions), and the [fullstack apps cookbook](https://dioxuslabs.com/learn/0.7/cookbook/fullstack).

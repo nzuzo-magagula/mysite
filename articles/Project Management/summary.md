@@ -1,268 +1,89 @@
 #####
-short_summary = "Software projects often fail not because of bad code, but because of poor planning and unclear structure. This series explores how project management principles — even from corporate settings — can help individual developers design and maintain cleaner, more sustainable software. Learn when (and why) to plan, what counts as a project, and how to adapt management practices for personal or open-source work."
+short_summary = "Software projects usually fail on planning and structure rather than on code. This series takes project management ideas, including the corporate ones, and adapts them for individual developers and small teams: when to plan, what actually counts as a project, and which techniques are worth the overhead."
 name = "summary"
 #####
-# **Designing and Managing Maintainable Software Projects**
+# Designing and Managing Maintainable Software Projects
 
-### **Introduction**
+Designing software is complicated. Early on I would catch myself thinking "why on earth is this here, let me just move it, that feels cleaner," and then ten minutes later thinking "oh, so that's why they did it that way, I should leave it alone."
 
-Designing software is inherently complex.
-Early in my career, I often caught myself saying:
+That back-and-forth between intuition and understanding is universal. It doesn't only show up in large formal architectures either. Small personal projects spiral into confusion just as fast when the design decisions were never made deliberately.
 
-> “Oh, so that’s why they did it that way. I should probably leave it alone,”
+The most useful thing I've learned about this is that Future Me is not Current Me, and the two of them have never met.
 
-only moments after thinking:
+Design is a mental process as much as a professional one. Whether you're working alone or in a team, structured planning is what keeps intention and action pointed in the same direction, and it's what makes code readable and predictable later.
 
-> “Why on earth is this here? Let me just move it — that feels cleaner.”
+## What Is Project Management?
 
-That back-and-forth between *intuition* and *understanding* is universal.
-It doesn’t only affect large, formal architectures; even small, personal projects can quickly spiral into confusion when design decisions aren’t made deliberately.
+Project management is the discipline of coordinating complex work so software can be delivered within constraints: time, scope, and resources.
 
-One of the most valuable lessons I’ve learned is this:
+It gets associated with large organizations, and for good reason, since businesses need predictable delivery and accountability. But the principles scale down. A startup building a mobile app might use sprints and burndown charts. A solo developer might list weekly milestones and estimate hours. Both are project management, just at different scales. The tools change, the mindset doesn't.
 
-> **Future Me is not Current Me — and they do not know each other.**
+## What Counts as a Project?
 
-Design isn’t just a professional process — it’s a mental one.
-Whether you’re working solo or within a team, structured planning helps align intention and action, making your code more readable, maintainable, and predictable.
+It helps to start with what a project isn't. Projects get confused with tasks, products and processes, and those sit at different levels of abstraction.
 
----
+A program or portfolio is a collection of related projects grouped by theme or strategic goal. A "Payments Program" might contain separate projects for building a payment API, designing a dashboard, and integrating fraud detection. Each is distinct, but they serve one objective.
 
-## **What Is Project Management?**
+A product is the result of a project, not the project itself. The project is "build a cross-platform note-taking app." The product is the app people download. Over time products spawn their own projects: adding sync, migrating to a new framework, and so on.
 
-**Project Management** is the discipline of coordinating complex work so that software can be delivered within specific **constraints** — time, scope, and resources.
+A process is a repeatable set of activities you perform regularly. "Deploy the backend every Friday" is a process. "Migrate the backend from AWS to Azure" is a project, because it happens once and has a defined end. Processes can be the output of a project, like an automated testing pipeline, or the target of one, like reducing build time.
 
-It’s often associated with large organizations, and for good reason: businesses require **predictable delivery** and **accountability**.
-However, smaller teams and individual developers can also benefit from these principles.
+If you own a bakery, your method for baking vanilla cakes is a process. Creating a new cheesecake recipe is a project, and the recipe it produces becomes a new process.
 
-> **Example:**
->
-> * A startup building a new mobile app may use *sprints* and *burndown charts* to track progress.
-> * A solo developer might simply list weekly milestones and estimate hours, but both are practicing project management — at different scales.
+### How they differ in practice
 
-Even when the tools differ, the mindset remains the same: deliberate planning leads to better outcomes.
+Projects are created ad hoc for a specific purpose and executed once, while processes are routine and designed to repeat indefinitely. That means projects focus on achieving an outcome and processes prioritize consistency.
 
----
+Projects have a start and an end date, even if those dates move. Processes run continuously or cyclically. Projects need flexible goals; processes thrive on predictability.
 
-## **What Defines a Project?**
+Project preconditions and tasks are often uncertain or exploratory. Process ones are documented and predictable, which is why it's much easier to onboard someone into a process than into a project.
 
-To understand what a *project* is, it helps to clarify what it is **not**.
+Project success rates are typically lower, and failures are common and instructive. Processes improve through iteration, usually by absorbing the lessons the projects produced.
 
-Projects are often mistaken for **tasks**, **products**, or **processes**, but these terms represent different levels of abstraction in software creation.
+Projects can redefine their goals or outputs entirely. Processes change in small ways, refining execution rather than direction.
 
----
+And they're measured differently. Projects are judged on output quality and whether the goal was met. Processes are judged on efficiency and consistency. An inefficient process compounds cost over time, while a project concludes and resets.
 
-### **Common Misconceptions**
+## What Should You Plan?
 
-#### **Programs or Portfolios**
+Not every idea needs a plan. Planning should match the scale, risk and uncertainty of the work.
 
-A **program** (or **portfolio**) is a *collection of related projects* grouped by theme or strategic goal.
+There's a useful distinction here: project planning defines *how* something gets done, covering scheduling, cost estimation and risk. Software design defines *what* gets done, covering architecture, data models and behaviour. They overlap in practice, and the questions look similar either way. When should this be finished? How will a future contributor understand it? What does it depend on? How will it be tested? How should the interfaces evolve? What sequence of events gets us to the goal?
 
-> **Example:**
->
-> * A “Payments Program” might include separate projects for building a payment API, designing a dashboard, and integrating fraud detection.
->   Each project is distinct but contributes to a broader objective.
+A beginner building a to-do app doesn't need a Gantt chart, but writing down "finish the CRUD backend before UI work" can save hours. That's already lightweight project management.
 
-#### **Products**
+Plenty of the techniques in this series will be overkill for what you're doing. The context of your project is the only real way to decide what you need, and over time you develop an intuition for it.
 
-A **product** is the **result** of a project, not the project itself.
+### When to plan
 
-> **Example:**
-> The *project* might be “Build a cross-platform note-taking app.”
-> The *product* is the app that users eventually download and use.
+My heuristic is to estimate the effort, double it, then decide whether it's worth planning in advance.
 
-Over time, products often spawn new **refactor or update projects** — like adding a sync feature or migrating to a new framework.
+For small utilities, like a script that parses CSV files, planning is minimal. For multi-component systems, say an IoT dashboard that collects, stores and visualizes data, planning becomes critical, because there are several layers of coordination and the thing has to survive long-term maintenance.
 
-#### **Processes**
+That's really why planning exists. Most software is intended to persist, and maintaining it over years requires documentation, consistency and clarity for everyone who touches it later, including you. In production this stops being a convenience and becomes survival. A lack of planning brings down critical systems or stalls delivery over dependencies nobody understood.
 
-A **process** is a repeatable set of activities performed regularly.
+## Why Plan at All?
 
-> **Example:**
->
-> * “Deploy the backend service every Friday” — that’s a *process*.
-> * “Migrate the backend from AWS to Azure” — that’s a *project*, because it’s a one-time effort with a defined goal.
+Sometimes you shouldn't. Project management can become a trap where planning replaces doing. Over-planning feels safe and quietly stalls execution.
 
-Processes can be *outputs* of projects (for example, creating an automated testing pipeline) or *targets* of improvement projects (like optimizing build time).
+No planning can be just as bad. For paid or mission-critical work, skipping it invites cost overruns, scope creep and outright failure.
 
-> **Analogy:**
-> If you own a bakery, your method for baking vanilla cakes is a process.
-> Creating a new cheesecake recipe, however, is a project — and the recipe it produces becomes a new process.
+The balance comes down to two variables: how much you don't yet know, and how much coordination is required. The more of either, the more planning earns its keep. Writing a script to rename files? Just start. Building a REST API for multiple clients? Outline the endpoints, error cases and versioning strategy first. Contributing to an open-source compiler? Plan, because the complexity demands it.
 
----
+### A practical example
 
-### **Key Differences Between Projects and Processes**
+When I was developing [`netabase_store`](https://github.com/newsnet-africa/netabase_store), integrating with [libp2p](https://docs.rs/libp2p/latest/libp2p/index.html) turned out to be far trickier than I expected.
 
-**1. Initiation**
+What started as a simple wrapper spiralled into serialization failures on non-serializable record types, excessive cloning for multithreaded communication, and a borrow checker that kept exposing design flaws I hadn't planned around. Each refactor introduced new dependencies and side effects.
 
-* **Project:** Created ad hoc for a specific purpose; executed once.
-* **Process:** Routine; designed to repeat indefinitely.
-* **Consequence:** Projects focus on achieving a specific outcome, while processes prioritize consistency and efficiency.
+What I eventually took from it is that uncertainty is the signal that planning is needed. Every unexpected problem made the next round of planning better informed, and once I understood the constraints, development became straightforward, because the hard thinking was already done.
 
----
+## This Series
 
-**2. Duration**
+The series draws on *Software Engineering* by [Ian Sommerville](https://books.google.co.za/books/about/Software_Engineering_Global_Edition.html?id=W_LjCwAAQBAJ&redir_esc=y) and adapts it for individual developers and smaller teams.
 
-* **Project:** Has one start and one end date (though these may shift).
-* **Process:** Runs continuously or cyclically.
-* **Consequence:** Projects require flexible goals; processes thrive on predictability.
+The first half covers planning and control: how project plans get established, how to define goals and requirements, how to estimate cost and time without lying to yourself, and how to balance flexibility against accountability when you're working alone.
 
----
+The second half covers execution and risk: methodologies like Agile, Waterfall and Spiral and how to adapt them at small scale, managing iterative feedback, identifying and quantifying risk, and translating enterprise techniques into something useful for personal productivity.
 
-**3. Preconditions and Tasks**
-
-* **Project:** Often uncertain or exploratory.
-* **Process:** Well-documented and predictable.
-* **Consequence:** Processes are easier to onboard new people into, while projects require deeper context.
-
----
-
-**4. Success Rate**
-
-* **Project:** Typically lower; failures are common and instructive.
-* **Process:** Improves through iteration and standardization.
-* **Consequence:** Processes mature through lessons learned from projects.
-
----
-
-**5. Change Scope**
-
-* **Project:** Large; can redefine goals or outputs entirely.
-* **Process:** Small; focuses on refining execution.
-* **Consequence:** Projects evolve rapidly, while processes stabilize over time.
-
----
-
-**6. Metrics**
-
-* **Project:** Measured by **output quality** and goal fulfillment.
-* **Process:** Measured by **efficiency** and consistency.
-* **Consequence:** Inefficient processes compound costs, while projects conclude and reset.
-
----
-
-## **What Should You Plan?**
-
-Not every idea needs a detailed plan.
-Planning should match the **scale**, **risk**, and **uncertainty** of your work.
-
-A key distinction:
-
-* **Project planning** defines *how* something is done — scheduling, cost estimation, risk mitigation.
-* **Software design** defines *what* is done — architecture, data models, and system behavior.
-
-Still, both overlap in practical ways. Ask questions like:
-
-* When should this be completed?
-* How will future contributors (or Future You) understand it?
-* What dependencies are required?
-* How will it be tested?
-* How should APIs or interfaces evolve?
-* What sequence of events should occur to achieve this goal?
-
-> **Example:**
-> A beginner building a “to-do app” might not need a Gantt chart, but writing down *“Finish the CRUD backend before UI work”* can save hours later.
-> That’s already lightweight project management in action.
-
-Throughout this series, some techniques may be overkill for what you would like to do. The context of your project is the best way to decide what you need.
-Again, over time, you'll gain some intuition about what you need to plan and why.
-
----
-
-### **When Should You Plan?**
-
-My personal heuristic:
-
-> Estimate the effort.
-> Double it.
-> Then decide if it’s worth planning in advance.
-
-For small utilities, such as a script to parse CSV files, planning may be minimal.
-For multi-component systems — say, an IoT dashboard that collects, stores, and visualizes data — planning becomes critical because there are multiple layers of coordination and long-term maintenance.
-
-Planning exists because most software is **intended to persist**.
-Maintaining a project over years requires documentation, consistency, and clarity across all future maintainers (including you).
-
-In production environments, this is more than convenience — it’s survival.
-A lack of planning can bring down critical systems or stall delivery due to misunderstood dependencies.
-
----
-
-## **Why Plan at All?**
-
-Sometimes, you shouldn’t.
-
-Project Management can become a trap where planning overtakes doing.
-Over-planning often appears safe but can stall creativity and delay execution.
-
-However, **no planning** can be equally catastrophic.
-For paid or mission-critical projects, failing to plan invites cost overruns, scope creep, or outright failure.
-
-The balance depends on two variables:
-
-* **Uncertainty** — how much you don’t yet know
-* **Scale** — how much coordination is required
-
-The more uncertainty or coordination, the more valuable planning becomes.
-
-> **Example:**
->
-> * Writing a quick script to rename files? Just start coding.
-> * Building a REST API for multiple clients? Outline endpoints, error cases, and versioning strategy first.
-> * Contributing to an open-source compiler? Absolutely plan — the complexity demands it.
-
----
-
-### **A Practical Example**
-
-When developing [`netabase_store`](https://github.com/newsnet-africa/netabase_store), integrating with [**libp2p**](https://docs.rs/libp2p/latest/libp2p/index.html) turned out far trickier than expected.
-
-What started as a “simple wrapper” project quickly spiraled into issues like:
-
-* Serialization failures on non-serializable record types
-* Excessive cloning for multithreaded communication
-* Rust’s borrow checker exposing unplanned design flaws
-
-Each refactor introduced new dependencies and side effects.
-Eventually, I realized something fundamental:
-
-> **Uncertainty is the signal that planning is needed.**
-
-Each unexpected problem made later planning more informed.
-Once I understood the constraints, development became straightforward — because the hard thinking had already been done.
-
----
-
-# **This Series**
-
-This series draws from *Software Engineering* by [**Ian Sommerville**](https://books.google.co.za/books/about/Software_Engineering_Global_Edition.html?id=W_LjCwAAQBAJ&redir_esc=y) and adapts its lessons for both **individual developers** and **smaller-scale teams**.
-
----
-
-## **1. Planning and Control Foundations**
-
-Explores how and why project plans are established — defining goals, setting requirements, and allocating tasks to achieve them effectively.
-
-> **Example Topics:**
->
-> * How to define measurable project goals
-> * Estimating costs and timelines realistically
-> * Balancing flexibility and accountability in solo work
-
----
-
-## **2. Execution and Risk Management**
-
-Examines practical techniques for executing project plans and managing uncertainty.
-We’ll look at methodologies like Agile, Waterfall, and Spiral, and explore how to adapt them for small or individual projects.
-
-> **Example Topics:**
->
-> * Managing iterative feedback loops
-> * Identifying and quantifying project risks
-> * Translating enterprise techniques for personal productivity
-
----
-
-### **Next Steps**
-
-In upcoming articles, we’ll move from theory to implementation:
-how to plan effectively, manage scope, schedule milestones, and handle risk — whether you’re leading a team or just managing your own long-term codebase.
+From there we move into scope, scheduling, and the network analysis techniques that tell you which delays actually matter.

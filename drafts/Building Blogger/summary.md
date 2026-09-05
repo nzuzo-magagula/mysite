@@ -1,67 +1,29 @@
 #####
-short_summary = "A comprehensive tutorial series on building a production-ready fullstack blog application with Dioxus. Learn how to create a type-safe web app with server-side rendering, client-side hydration, markdown parsing with TOML metadata, IndexedDB caching, GitHub integration, and aggressive WASM optimization - all while maintaining a single Rust codebase that works on web, desktop, and mobile."
+short_summary = "Building a fullstack blog in Dioxus: server-side rendering with client hydration, a markdown parser with TOML frontmatter, IndexedDB caching, GitHub integration, and getting the WASM bundle down to something reasonable. One Rust codebase, running on web, desktop and mobile."
 name = "summary"
 #####
-# Building Blogger: A Complete Fullstack Dioxus Application
+# Building Blogger: A Fullstack Dioxus Application
 
-## Introduction
+This series documents building the blog application you're reading this on, using Dioxus. It's not a simplified tutorial project. It's the actual code, including the parts that took several attempts.
 
-This series documents the creation of a real, production-ready blog application using Dioxus - Rust's premier fullstack framework. Unlike typical tutorials, we're building an actual blogging platform with all the features you'd expect in a modern web application.
+The application covers a fair amount of ground: multiple pages (home, article viewer, series listing, about), a custom markdown parser with TOML frontmatter and syntax highlighting, series auto-detected from folder structure, previous/next navigation and a table of contents, GitHub repository display with client-side caching, and a mobile-first responsive design with theme support.
 
-**What makes this different?**
-- Real production code, not simplified examples
-- Fullstack architecture explained from both server and client perspectives
-- Performance optimization with concrete benchmarks
-- Type-safe patterns throughout the stack
-- Cross-platform considerations (web, desktop, mobile)
+Underneath that it does server-side rendering for fast initial loads, client-side hydration once the WASM arrives, hot reloading when articles change during development, type-safe RPC through server functions, IndexedDB caching via netabase_store, and enough WASM optimization to keep the production bundle under 500KB.
 
-## What You'll Build
+## What You Need to Know
 
-By following this series, you'll create a complete blog application with:
+You'll get the most out of this if you're comfortable with Rust fundamentals (ownership, traits, async), basic web concepts, and component-based UI frameworks like React or Vue.
 
-### Core Features
-- **Multi-page Application**: Home, article viewer, series listing, about page
-- **Markdown Rendering**: Custom parser with TOML frontmatter and syntax highlighting
-- **Article Organization**: Auto-detect series from folder structure
-- **Navigation System**: Previous/next links, breadcrumbs, table of contents
-- **GitHub Integration**: Display repositories with client-side caching
-- **Responsive Design**: Mobile-first with Tailwind CSS and theme support
+Dioxus itself is explained as we go, along with the fullstack architecture patterns and the optimization techniques. You don't need those beforehand.
 
-### Technical Features
-- **Server-Side Rendering**: Fast initial page loads for SEO
-- **Client-Side Hydration**: Interactive UI after WASM loads
-- **Hot Reloading**: Auto-refresh when articles change (development)
-- **Type-Safe RPC**: Server functions with automatic serialization
-- **Browser Caching**: IndexedDB integration using netabase_store
-- **Optimized WASM**: < 500KB production bundle
+## The Articles
 
-## Prerequisites
+### Part 1: Introduction and Architecture
 
-To get the most from this series, you should understand:
+Why Dioxus for fullstack work, how the project is organized, type-safe routing, server functions as an alternative to REST APIs, signal-based reactivity, and feature-gated compilation.
 
-**Essential:**
-- Rust fundamentals (ownership, traits, async/await)
-- Basic web concepts (HTML, CSS, HTTP)
-- Component-based UI frameworks (React, Vue, etc.)
+The core idea is that a server function looks like a normal Rust call from the client:
 
-**Helpful but not required:**
-- Dioxus basics (we explain as we go)
-- Fullstack architecture patterns
-- Performance optimization techniques
-
-## Series Overview
-
-### Part 1: Introduction and Architecture Overview
-
-**What you'll learn:**
-- Why Dioxus for fullstack development
-- Project structure and organization
-- Routing with type-safe paths
-- Server functions vs REST APIs
-- Signal-based reactivity
-- Feature-gated compilation
-
-**Key concepts:**
 ```rust
 // Server function that runs on server
 #[server]
@@ -73,23 +35,12 @@ async fn fetch_article(path: String) -> Result<Article> {
 let article = fetch_article("post.md".to_string()).await?;
 ```
 
-**Topics covered:**
-- Dioxus architecture and benefits
-- fullstack vs traditional approach
-- Module organization patterns
-- Conditional compilation strategies
-- Basic data flow patterns
-
 ### Part 2: Markdown Parser and Rendering
 
-**What you'll learn:**
-- Parsing TOML frontmatter from markdown
-- Integrating `dioxus_markdown` for rendering
-- Adding syntax highlighting with Prism.js
-- Creating custom markdown extensions
-- Component-based rendering pipeline
+Parsing TOML frontmatter, integrating `dioxus_markdown`, adding syntax highlighting with Prism.js, custom markdown extensions, and the rendering pipeline.
 
-**Key implementation:**
+The frontmatter parsing is deliberately simple:
+
 ```rust
 /// Parse TOML metadata between ##### delimiters
 fn parse_toml_metadata(content: &str) -> Option<ArticleTomlMetadata> {
@@ -104,15 +55,8 @@ fn parse_toml_metadata(content: &str) -> Option<ArticleTomlMetadata> {
 }
 ```
 
-**Topics covered:**
-- TOML frontmatter structure and parsing
-- Markdown AST manipulation
-- Syntax highlighting integration
-- Math rendering with KaTeX
-- Custom block types (callouts, code tabs)
-- SEO metadata generation
+Which parses metadata blocks that look like this:
 
-**Metadata example:**
 ```toml
 #####
 date = "2025-11-20"
@@ -129,17 +73,14 @@ next = "Building Blogger/03-article-management"
 #####
 ```
 
-### Part 3: Article Management and Caching System
+Also covered: markdown AST manipulation, math rendering with KaTeX, custom block types like callouts and code tabs, and generating SEO metadata.
 
-**What you'll learn:**
-- File system organization for articles
-- Auto-detecting series from folder structure
-- Extracting titles without full parsing
-- Server-side caching with `cached` crate
-- Client-side caching with IndexedDB
-- File watching for hot reloading
+### Part 3: Article Management and Caching
 
-**File organization:**
+How articles are laid out on disk, detecting series from folder structure, extracting titles without parsing the whole file, server-side caching with the `cached` crate, client-side caching in IndexedDB, and file watching for hot reload.
+
+The layout is just directories:
+
 ```
 articles/
 ├── Building Blogger/
@@ -153,7 +94,8 @@ articles/
     └── ...
 ```
 
-**IndexedDB caching:**
+GitHub data gets cached in the browser through netabase_store:
+
 ```rust
 #[derive(NetabaseModel, bincode::Encode, bincode::Decode)]
 #[netabase(GitHubCacheDefinition)]
@@ -181,26 +123,14 @@ async fn fetch_repos_cached() -> Result<Vec<GitHubRepo>> {
 }
 ```
 
-**Topics covered:**
-- Efficient file system traversal
-- Metadata extraction strategies
-- Server-side caching patterns
-- IndexedDB with netabase_store
-- File watching with `notify` crate
-- Cache invalidation strategies
-- GitHub API integration and rate limiting
+Which gets into cache invalidation, file watching with `notify`, and GitHub's rate limits.
 
 ### Part 4: Routing and Page Components
 
-**What you'll learn:**
-- Type-safe routing with Routable derive
-- Dynamic route segments and catch-alls
-- Component props and state management
-- Loading states and error handling
-- Navigation components
-- Responsive layouts
+Type-safe routing with the `Routable` derive, dynamic segments and catch-alls, component props and state, loading states and error handling, navigation components, and responsive layouts.
 
-**Type-safe routing:**
+Routes are an enum:
+
 ```rust
 #[derive(Clone, Routable, Debug, PartialEq)]
 enum Route {
@@ -219,7 +149,8 @@ enum Route {
 }
 ```
 
-**Component patterns:**
+And pages are components that match on resource state:
+
 ```rust
 #[component]
 pub fn ArticlePage(path: String) -> Element {
@@ -248,27 +179,14 @@ pub fn ArticlePage(path: String) -> Element {
 }
 ```
 
-**Topics covered:**
-- Route definition and navigation
-- Props passing and validation
-- State management patterns
-- Resource loading and caching
-- Error boundaries
-- Loading skeletons
-- Accessibility considerations
-- Mobile-first responsive design
+Also: error boundaries, loading skeletons, accessibility, and mobile-first design.
 
 ### Part 5: Fullstack Architecture and Optimization
 
-**What you'll learn:**
-- Server functions deep dive
-- SSR vs CSR trade-offs
-- WASM bundle optimization
-- Code splitting strategies
-- Production deployment
-- Performance monitoring
+Server functions in depth, the SSR versus CSR trade-off, WASM bundle optimization, code splitting, deployment, and monitoring.
 
-**WASM optimization:**
+The optimization config that got the bundle down:
+
 ```toml
 [profile.release]
 opt-level = 'z'         # Optimize for size
@@ -284,7 +202,8 @@ level = 'z'             # Maximum compression
 enabled = true          # Brotli/gzip
 ```
 
-**Performance results:**
+The difference it makes:
+
 | Metric | Dev Mode | Release Mode |
 |--------|----------|--------------|
 | WASM Size | ~8MB | ~500KB |
@@ -292,7 +211,8 @@ enabled = true          # Brotli/gzip
 | Interaction | ~55s | ~2.5s |
 | Bundle Load | ~50s | ~1s |
 
-**Server function patterns:**
+Server functions come in a few shapes, from plain fetching to cached to authenticated:
+
 ```rust
 // Simple data fetching
 #[server]
@@ -321,70 +241,21 @@ async fn update_article(
 }
 ```
 
-**Topics covered:**
-- Server function best practices
-- Caching strategies (server and client)
-- Bundle size analysis and reduction
-- Code splitting with dynamic imports
-- Progressive Web App features
-- Docker deployment
-- CI/CD pipelines
-- Monitoring and analytics
-- SEO optimization
-- Performance budgets
+Plus bundle analysis, dynamic imports, PWA features, Docker deployment, CI/CD, SEO, and performance budgets.
 
-## Key Techniques and Patterns
+## Recurring Patterns
 
-Throughout the series, you'll encounter:
+A handful of things come up repeatedly across the series.
 
-### Dioxus Patterns
-- Component composition and reusability
-- Signal-based reactivity and effects
-- Resource management and lifecycle
-- Context for global state
-- Conditional rendering strategies
+On the Dioxus side: component composition, signal-based reactivity and effects, resource lifecycle, context for global state, and conditional rendering.
 
-### Fullstack Patterns
-- Server functions for RPC
-- Type-safe client-server communication
-- Feature-gated code for different platforms
-- SSR with client hydration
-- Progressive enhancement
+On the fullstack side: server functions for RPC, type-safe client-server communication, feature-gating code per platform, SSR with hydration, and progressive enhancement.
 
-### Performance Patterns
-- Lazy loading and code splitting
-- Aggressive WASM optimization
-- Multi-level caching strategies
-- Efficient file system operations
-- Minimal re-renders
+On performance: lazy loading, code splitting, aggressive WASM optimization, multi-level caching, efficient filesystem operations, and minimizing re-renders.
 
-### Architecture Patterns
-- Module organization for scalability
-- Separation of concerns
-- Dependency injection
-- Error handling strategies
-- Testing approaches
-
-## What Makes This Series Unique
-
-### 1. Real Production Code
-Every example comes from the actual blogger application. You're learning from real-world code, not simplified demos.
-
-### 2. Fullstack Perspective
-We cover both server and client sides, showing how they integrate and where responsibilities split.
-
-### 3. Performance Focus
-Concrete benchmarks and optimization strategies, not just "make it work" solutions.
-
-### 4. Type Safety Throughout
-Leverage Rust's type system for correctness from server to client.
-
-### 5. Cross-Platform Considerations
-Write once, deploy to web, desktop, and mobile.
+And architecturally: module organization, separation of concerns, dependency injection, error handling, and testing.
 
 ## Project Structure
-
-The final application has this structure:
 
 ```
 blogger/
@@ -422,9 +293,7 @@ blogger/
 └── PERFORMANCE.md              # Performance notes
 ```
 
-## Dependencies
-
-Key dependencies used:
+The dependencies are fairly small:
 
 ```toml
 [dependencies]
@@ -438,9 +307,7 @@ notify = "7.0"         # File watching
 netabase_store = "..." # IndexedDB (web)
 ```
 
-## Development Workflow
-
-Typical development session:
+And the workflow:
 
 ```bash
 # Start dev server
@@ -457,9 +324,10 @@ docker build -t blogger .
 docker run -p 8080:8080 blogger
 ```
 
-## Common Patterns
+## Three Patterns Worth Memorizing
 
-### Fetching Data
+Fetching data:
+
 ```rust
 // Define server function
 #[server]
@@ -480,7 +348,8 @@ match data.read().as_ref() {
 }
 ```
 
-### Navigation
+Navigation:
+
 ```rust
 let nav = navigator();
 
@@ -498,7 +367,8 @@ rsx! {
 }
 ```
 
-### State Management
+State:
+
 ```rust
 // Local state
 let mut count = use_signal(|| 0);
@@ -515,48 +385,16 @@ use_effect(move || {
 });
 ```
 
-## Expected Outcomes
+## Where to Start
 
-After completing this series, you'll be able to:
-
-- Build fullstack web applications in Rust
-- Understand Dioxus architecture and patterns
-- Implement server-side rendering
-- Optimize WASM bundle size
-- Create type-safe APIs
-- Integrate third-party services
-- Deploy to production
-- Debug and profile performance
-
-## Beyond the Basics
-
-The techniques learned here apply to:
-
-- **Admin Dashboards**: Build internal tools
-- **E-commerce**: Product catalogs with SSR
-- **Documentation Sites**: Like this blog but for docs
-- **Real-time Apps**: Add WebSocket support
-- **Mobile Apps**: Same code, different platform
-
-## Start Your Journey
-
-Ready to build modern web apps in Rust?
-
-**[Part 1: Introduction and Architecture Overview →](./01-introduction-and-architecture.md)**
+[Part 1: Introduction and Architecture Overview](./01-introduction-and-architecture.md)
 
 ---
 
-## About the Project
+This blog runs in production at NewsNet Africa, publishing technical articles, tutorials and project documentation. It's a reasonable argument that Rust and Dioxus are ready for real web work.
 
-This blog application is used in production at NewsNet Africa to publish technical articles, tutorials, and project documentation. It demonstrates that Rust and Dioxus are ready for real-world web development.
+Source code: [github.com/nzuzo-newsnet/blogger](https://github.com/nzuzo-newsnet/blogger)
 
-**Live Demo**: [blog.nzuzo.dev](https://blog.nzuzo.dev) _(example)_
+Dioxus: [dioxuslabs.com](https://dioxuslabs.com)
 
-**Source Code**: [github.com/nzuzo-newsnet/blogger](https://github.com/nzuzo-newsnet/blogger)
-
-**Dioxus**: [dioxuslabs.com](https://dioxuslabs.com)
-
-## License
-
-Articles: CC BY-SA 4.0
-Code: MIT OR Apache-2.0
+Articles are CC BY-SA 4.0, code is MIT OR Apache-2.0.
